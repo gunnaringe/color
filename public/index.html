@@ -959,13 +959,17 @@
   //                                   built-in letter (y/g/b) or a 3/6-digit
   //                                   hex, plus an optional `:name`. Names are
   //                                   percent-encoded, with `+` for spaces.
-  //   p=t | p=5 | p=t5:fff            pause screen on: `t` = on tap, a number =
+  //   p=t | p=5 | p=t5:fff            pause screen: `t` = on tap, a number =
   //                                   after that many seconds (both allowed);
   //                                   optional `:hex` pause color (black if
-  //                                   left out)
+  //                                   left out). A leading `-` (p=-t:fff)
+  //                                   means turned off, but keeps its details.
+  //   s=8                             pause seconds while the timer is off
   //   o=r | o=n | o=                  options, only if not both on:
   //                                   r = no repeats, n = show names
-  //   l=no | l=en                     language (auto if left out)
+  //   l=no | l=en                     language. Always written — "auto" is
+  //                                   resolved to what the sender sees, so
+  //                                   the setup looks the same everywhere.
   //
   // Unknown keys and malformed tokens are ignored, so older links keep working.
 
@@ -990,12 +994,15 @@
       return (letter ?? shortHex(c.hex)) + (c.name ? `:${encName(c.name)}` : "");
     }).join(",");
     if (colors !== "y,g,b") parts.push(`c=${colors}`);
-    const p = st.pause;
-    if (p.enabled) {
-      parts.push(`p=${p.onTap ? "t" : ""}${p.timer ? p.seconds : ""}${p.hex !== "#000000" ? `:${shortHex(p.hex)}` : ""}`);
+    // Pause details are kept even while it's off, so nothing is lost.
+    const p = st.pause, d = defaults().pause;
+    const pauseTouched = p.onTap !== d.onTap || p.timer !== d.timer || p.hex !== d.hex || p.seconds !== d.seconds;
+    if (p.enabled || pauseTouched) {
+      parts.push(`p=${p.enabled ? "" : "-"}${p.onTap ? "t" : ""}${p.timer ? p.seconds : ""}${p.hex !== d.hex ? `:${shortHex(p.hex)}` : ""}`);
     }
+    if (!p.timer && p.seconds !== d.seconds) parts.push(`s=${p.seconds}`);
     if (!(st.noRepeat && st.showName)) parts.push(`o=${st.noRepeat ? "r" : ""}${st.showName ? "n" : ""}`);
-    if (st.lang !== "auto") parts.push(`l=${st.lang}`);
+    parts.push(`l=${st.lang === "auto" ? browserLang() : st.lang}`);
     return parts.join("&");
   };
 
@@ -1017,14 +1024,18 @@
         }).filter(Boolean);
         if (colors.length) st.colors = colors;
       } else if (k === "p") {
-        const [when, hex] = v.split(":");
+        const [flags, hex] = v.split(":");
+        const when = flags.replace(/^-/, "");
         const secs = parseInt(when.replace("t", ""), 10);
-        st.pause.enabled = true;
+        st.pause.enabled = !flags.startsWith("-");
         st.pause.onTap = when.includes("t");
         st.pause.timer = secs > 0;
         if (!st.pause.onTap && !st.pause.timer) st.pause.onTap = true;
         if (secs) st.pause.seconds = Math.min(60, Math.max(1, secs));
         if (hex && parseHex(hex)) st.pause.hex = parseHex(hex);
+      } else if (k === "s") {
+        const secs = parseInt(v, 10);
+        if (secs > 0) st.pause.seconds = Math.min(60, Math.max(1, secs));
       } else if (k === "o") {
         st.noRepeat = v.includes("r");
         st.showName = v.includes("n");
@@ -1062,11 +1073,9 @@
 
   // ---------- i18n ----------
 
-  const lang = () => {
-    if (settings.lang !== "auto") return settings.lang;
-    const nordic = (navigator.languages || [navigator.language]).some((l) => /^(no|nb|nn)\b/i.test(l));
-    return nordic ? "no" : "en";
-  };
+  const browserLang = () =>
+    (navigator.languages || [navigator.language]).some((l) => /^(no|nb|nn)\b/i.test(l)) ? "no" : "en";
+  const lang = () => (settings.lang === "auto" ? browserLang() : settings.lang);
   const t = (k) => I18N[lang()][k] ?? I18N.en[k] ?? k;
   const colorName = (c) => c.name || (c.key ? t(c.key) : "");
 
@@ -1696,6 +1705,16 @@
       apply(previous);
     };
   };
+
+  // Another tab saved (e.g. a link opened in a new tab). Adopt its settings, or
+  // this tab's next save would overwrite them with its stale copy.
+  addEventListener("storage", (e) => {
+    if (e.key !== STORAGE_KEY) return;
+    settings = load();
+    lastIndex = -1;
+    renderAll();
+    if (state !== "color") paint(pauseHex());
+  });
 
   // Opening another link in an already open tab.
   addEventListener("hashchange", () => {

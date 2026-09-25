@@ -49,15 +49,17 @@ The **Share setup** button builds a link like:
 https://color.apphub.casa/#n=Morgenrutine&c=y:Hopp+10,g:Sitt,e63946:Snurr&p=5
 ```
 
-Anything left at its default is omitted, so the links stay short and readable:
+Everything in the setup is kept. Values at their default are omitted to keep
+links short and readable:
 
 | Key | Meaning | Examples |
 |-----|---------|----------|
 | `n` | Setup name | `n=Morgenrutine` |
 | `c` | Colors: a built-in letter (`y`/`g`/`b`) or a 3/6-digit hex, optionally `:name` | `c=y,g,b,f0f` · `c=e63946:Snurr+rundt` |
-| `p` | Pause screen on: `t` = on tap and/or seconds; optional `:hex` pause color | `p=t` · `p=5` · `p=t5:fff` |
+| `p` | Pause screen: `t` = on tap and/or seconds; optional `:hex` pause color; leading `-` = turned off (details kept) | `p=t` · `p=5` · `p=t5:fff` · `p=-t:fff` |
+| `s` | Pause seconds while the timer is off | `s=8` |
 | `o` | Options when not both on: `r` = no repeats, `n` = show names | `o=n` · `o=` |
-| `l` | Language (auto if omitted) | `l=no` · `l=en` |
+| `l` | Language — always included, so the setup looks the same on every device | `l=no` · `l=en` |
 
 Names are percent-encoded with `+` for spaces. Unknown keys and malformed parts
 are ignored, so links keep working as the format grows.
