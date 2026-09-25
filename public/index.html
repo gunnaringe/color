@@ -586,8 +586,27 @@
     color: #ff9dbb;
     background: rgba(255, 93, 143, 0.16);
   }
+  #confirm[data-tone="accent"] .badge { color: var(--accent); background: rgba(255, 210, 63, 0.14); }
   #confirm .badge svg { width: 1.75rem; height: 1.75rem; }
-  #confirm.open .badge svg { animation: spin-back 0.7s var(--ease-pop) 0.1s; }
+  #confirm .field {
+    width: 100%;
+    margin: -0.5rem 0 1.4rem;
+    padding: 0.8rem 1.1rem;
+    border: 0;
+    border-radius: 999px;
+    outline: 0;
+    background: rgba(255, 255, 255, 0.07);
+    box-shadow: inset 0 0 0 2px rgba(255, 210, 63, 0.35);
+    font-size: 0.9rem;
+    text-overflow: ellipsis;
+    user-select: all;
+    -webkit-user-select: all;
+  }
+  #confirm .field[hidden] { display: none; }
+  #confirm .field::selection { background: rgba(255, 210, 63, 0.35); color: #fff; }
+  #confirm.open[data-tone="danger"] .badge svg { animation: spin-back 0.7s var(--ease-pop) 0.1s; }
+  #confirm.open[data-tone="accent"] .badge svg { animation: wobble 0.7s var(--ease-pop) 0.1s; }
+  @keyframes wobble { from { transform: rotate(-35deg) scale(0.6); } }
   @keyframes spin-back { from { transform: rotate(160deg); } }
   #confirm h4 { margin: 0; font-size: 1.35rem; font-weight: 600; }
   #confirm p { margin: 0.5rem 0 1.5rem; color: var(--muted); line-height: 1.4; }
@@ -769,11 +788,10 @@
 
 <div id="confirm">
   <div class="card" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-text">
-    <div class="badge">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3.5 4v4.5H8"/></svg>
-    </div>
+    <div class="badge"></div>
     <h4 id="confirm-title"></h4>
     <p id="confirm-text"></p>
+    <input class="field" id="confirm-field" readonly hidden>
     <div class="actions">
       <button class="ghost" id="confirm-no"></button>
       <button class="pill danger" id="confirm-yes"></button>
@@ -820,7 +838,10 @@
       loadedNamed: "«{name}» er lastet inn",
       undo: "Angre",
       copied: "Lenke kopiert!",
-      copyThis: "Kopier denne lenken:",
+      linkTitle: "Del oppsettet",
+      linkText: "Kopier lenken og send den til den andre enheten.",
+      copy: "Kopier",
+      closeBtn: "Lukk",
       confirmReset: "Tilbakestille alt?",
       confirmResetText: "Farger, navn og alle innstillinger går tilbake til standard.",
       cancel: "Avbryt",
@@ -858,7 +879,10 @@
       loadedNamed: "Loaded “{name}”",
       undo: "Undo",
       copied: "Link copied!",
-      copyThis: "Copy this link:",
+      linkTitle: "Share this setup",
+      linkText: "Copy the link and open it on the other device.",
+      copy: "Copy",
+      closeBtn: "Close",
       confirmReset: "Reset everything?",
       confirmResetText: "Colors, names and all settings go back to the defaults.",
       cancel: "Cancel",
@@ -1535,63 +1559,116 @@
   $("#share").addEventListener("click", async () => {
     const url = shareUrl();
     const btn = $("#share");
-    // Native share sheet on phones/tablets; clipboard elsewhere.
+    // Native share sheet on phones/tablets; clipboard elsewhere; and if both
+    // fail, a dialog with the link ready to copy by hand.
     if (navigator.share && matchMedia("(pointer: coarse)").matches) {
-      try { await navigator.share({ title: document.title, url }); } catch {}
-      return;
+      try {
+        await navigator.share({ title: document.title, url });
+        return;
+      } catch (err) {
+        if (err.name === "AbortError") return; // closed the share sheet
+      }
     }
     try {
       await navigator.clipboard.writeText(url);
       btn.textContent = t("copied");
       setTimeout(() => (btn.textContent = t("share")), 2000);
     } catch {
-      prompt(t("copyThis"), url);
+      showLink(url);
     }
   });
 
-  // ---------- Confirm dialog ----------
+  const showLink = (url) => dialog({
+    tone: "accent",
+    icon: ICONS.link,
+    title: t("linkTitle"),
+    text: t("linkText"),
+    field: url,
+    no: t("closeBtn"),
+    yes: t("copy"),
+    // Older copy path, from the selected field; keep the dialog open to say so.
+    onYes: async (yesBtn) => {
+      const field = $("#confirm-field");
+      field.focus();
+      field.select();
+      let ok = false;
+      try { ok = document.execCommand("copy"); } catch {}
+      if (!ok) return false;
+      yesBtn.textContent = t("copied");
+      await new Promise((r) => setTimeout(r, 900));
+      return true;
+    },
+  });
+
+  // ---------- Dialog ----------
 
   const confirmEl = $("#confirm");
 
-  // Resolves true/false. Cancel is focused, so an accidental Enter is harmless.
-  const confirmDialog = ({ title, text, yes }) => new Promise((resolve) => {
-    $("#confirm-title").textContent = title;
-    $("#confirm-text").textContent = text;
-    $("#confirm-yes").textContent = yes;
-    $("#confirm-no").textContent = t("cancel");
-    const returnFocus = document.activeElement;
-    confirmEl.classList.add("open");
-    $("#confirm-no").focus();
+  const ICONS = {
+    reset: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3.5 4v4.5H8"/></svg>',
+    link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1"/><path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"/></svg>',
+  };
 
-    const done = (answer) => {
-      confirmEl.classList.remove("open");
-      confirmEl.removeEventListener("click", onClick);
-      document.removeEventListener("keydown", onKey, true);
-      returnFocus?.focus({ preventScroll: true });
-      resolve(answer);
-    };
-    const onClick = (e) => {
-      if (e.target.closest("#confirm-yes")) done(true);
-      else if (e.target.closest("#confirm-no") || e.target === confirmEl) done(false);
-    };
-    const onKey = (e) => {
-      // Don't let Escape also close settings, or Space draw a color.
-      e.stopPropagation();
-      if (!confirmEl.contains(e.target) && e.key !== "Escape" && e.key !== "Tab") e.preventDefault();
-      if (e.key === "Escape") done(false);
-      // Keep Tab inside the two buttons.
-      if (e.key === "Tab") {
-        e.preventDefault();
-        (document.activeElement === $("#confirm-no") ? $("#confirm-yes") : $("#confirm-no")).focus();
+  // Resolves true (yes) or false (no / Escape / backdrop). `onYes` may return
+  // false to keep the dialog open. Focus starts on the field if there is one,
+  // otherwise on "no", so an accidental Enter is harmless.
+  const dialog = ({ tone = "danger", icon, title, text, field, yes, no = t("cancel"), onYes }) =>
+    new Promise((resolve) => {
+      const fieldEl = $("#confirm-field");
+      const yesEl = $("#confirm-yes");
+      const noEl = $("#confirm-no");
+      confirmEl.dataset.tone = tone;
+      confirmEl.querySelector(".badge").innerHTML = icon;
+      $("#confirm-title").textContent = title;
+      $("#confirm-text").textContent = text;
+      fieldEl.hidden = field == null;
+      fieldEl.value = field ?? "";
+      yesEl.textContent = yes;
+      yesEl.className = `pill ${tone === "danger" ? "danger" : ""}`;
+      noEl.textContent = no;
+      const returnFocus = document.activeElement;
+      confirmEl.classList.add("open");
+      if (field != null) {
+        fieldEl.focus();
+        fieldEl.select();
+      } else {
+        noEl.focus();
       }
-    };
-    confirmEl.addEventListener("click", onClick);
-    // Capture on document so keys are ours wherever focus ended up.
-    document.addEventListener("keydown", onKey, true);
-  });
+
+      const done = (answer) => {
+        confirmEl.classList.remove("open");
+        confirmEl.removeEventListener("click", onClick);
+        document.removeEventListener("keydown", onKey, true);
+        returnFocus?.focus({ preventScroll: true });
+        resolve(answer);
+      };
+      const onClick = async (e) => {
+        if (e.target.closest("#confirm-yes")) {
+          if (!onYes || (await onYes(yesEl)) !== false) done(true);
+        } else if (e.target.closest("#confirm-no") || e.target === confirmEl) {
+          done(false);
+        }
+      };
+      const onKey = (e) => {
+        // Don't let Escape also close settings, or Space draw a color.
+        e.stopPropagation();
+        if (!confirmEl.contains(e.target) && e.key !== "Escape" && e.key !== "Tab") e.preventDefault();
+        if (e.key === "Escape") done(false);
+        // Keep Tab inside the dialog.
+        if (e.key === "Tab") {
+          e.preventDefault();
+          const stops = [fieldEl, noEl, yesEl].filter((el) => !el.hidden);
+          const i = stops.indexOf(document.activeElement);
+          stops[(i + (e.shiftKey ? -1 : 1) + stops.length) % stops.length].focus();
+        }
+      };
+      confirmEl.addEventListener("click", onClick);
+      // Capture on document so keys are ours wherever focus ended up.
+      document.addEventListener("keydown", onKey, true);
+    });
 
   $("#reset").addEventListener("click", async () => {
-    const ok = await confirmDialog({ title: t("confirmReset"), text: t("confirmResetText"), yes: t("reset") });
+    const ok = await dialog({ icon: ICONS.reset, title: t("confirmReset"), text: t("confirmResetText"), yes: t("reset") });
     if (!ok) return;
     apply(defaults());
   });
