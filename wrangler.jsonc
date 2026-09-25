@@ -1,0 +1,12 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // Don't rename: the color.haxxor.xyz custom domain is bound to this Worker name.
+  "name": "color-haxxor-xyz",
+  "compatibility_date": "2026-09-25",
+  "assets": {
+    "directory": "public"
+  },
+  "routes": [
+    { "pattern": "color.haxxor.xyz", "custom_domain": true }
+  ]
+}
