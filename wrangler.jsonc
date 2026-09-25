@@ -1,7 +1,8 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  // Don't rename: the color.apphub.casa custom domain is bound to this Worker name.
-  "name": "color-apphub-casa",
+  // Must match the Worker created by the Workers Builds import (it owns the
+  // color.apphub.casa custom domain). Never rename.
+  "name": "color",
   "compatibility_date": "2026-09-25",
   "assets": {
     "directory": "public"
