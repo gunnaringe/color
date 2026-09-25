@@ -46,7 +46,7 @@ and a tap or a press of **space** reveals the next one.
 The **Share setup** button builds a link like:
 
 ```
-https://color.apphub.casa/#n=Morgenrutine&c=y:Hopp+10,g:Sitt,e63946:Snurr&p=5
+https://color.apphub.casa/#n=Morgenrutine&c=y_Hopp+10~g_Sitt~e63946_Snurr&p=5&l=no
 ```
 
 Everything in the setup is kept. Values at their default are omitted to keep
@@ -55,14 +55,17 @@ links short and readable:
 | Key | Meaning | Examples |
 |-----|---------|----------|
 | `n` | Setup name | `n=Morgenrutine` |
-| `c` | Colors: a built-in letter (`y`/`g`/`b`) or a 3/6-digit hex, optionally `:name` | `c=y,g,b,f0f` · `c=e63946:Snurr+rundt` |
-| `p` | Pause screen: `t` = on tap and/or seconds; optional `:hex` pause color; leading `-` = turned off (details kept) | `p=t` · `p=5` · `p=t5:fff` · `p=-t:fff` |
+| `c` | Colors, separated by `~`: a built-in letter (`y`/`g`/`b`) or a 3/6-digit hex, optionally `_name` | `c=y~g~b~f0f` · `c=e63946_Snurr+rundt` |
+| `p` | Pause screen: `t` = on tap and/or seconds; optional `_hex` pause color; leading `-` = turned off (details kept) | `p=t` · `p=5` · `p=t5_fff` · `p=-t_fff` |
 | `s` | Pause seconds while the timer is off | `s=8` |
 | `o` | Options when not both on: `r` = no repeats, `n` = show names | `o=n` · `o=` |
 | `l` | Language — always included, so the setup looks the same on every device | `l=no` · `l=en` |
 
-Names are percent-encoded with `+` for spaces. Unknown keys and malformed parts
-are ignored, so links keep working as the format grows.
+Links contain only letters, digits and `- _ ~ + % & =`, because many chat and
+notes apps end a pasted link at a `,` or `:` or trim trailing punctuation. Names
+are percent-encoded (punctuation included) with `+` for spaces. Older links with
+`,` and `:` still load, and unknown keys are ignored, so links keep working as
+the format grows.
 
 ## Development
 

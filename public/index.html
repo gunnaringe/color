@@ -955,14 +955,14 @@
   //
   //   n=Morgenrutine                  optional setup name, encoded like color
   //                                   names below
-  //   c=y:Hopp,g,e63946:Snurr+rundt   colors, comma-separated. A token is a
+  //   c=y_Hopp~g~e63946_Snurr+rundt   colors, `~`-separated. A token is a
   //                                   built-in letter (y/g/b) or a 3/6-digit
-  //                                   hex, plus an optional `:name`. Names are
+  //                                   hex, plus an optional `_name`. Names are
   //                                   percent-encoded, with `+` for spaces.
-  //   p=t | p=5 | p=t5:fff            pause screen: `t` = on tap, a number =
+  //   p=t | p=5 | p=t5_fff            pause screen: `t` = on tap, a number =
   //                                   after that many seconds (both allowed);
-  //                                   optional `:hex` pause color (black if
-  //                                   left out). A leading `-` (p=-t:fff)
+  //                                   optional `_hex` pause color (black if
+  //                                   left out). A leading `-` (p=-t_fff)
   //                                   means turned off, but keeps its details.
   //   s=8                             pause seconds while the timer is off
   //   o=r | o=n | o=                  options, only if not both on:
@@ -971,7 +971,14 @@
   //                                   resolved to what the sender sees, so
   //                                   the setup looks the same everywhere.
   //
-  // Unknown keys and malformed tokens are ignored, so older links keep working.
+  // Links use only letters, digits and `-_~+%&=`: chat apps and notes decide
+  // where a pasted link ends, and many stop at `,` or `:` or trim trailing
+  // `.!)'`, silently dropping the rest. So names escape those too.
+  //
+  // Older links used `,` between colors and `:` before names / pause color;
+  // the new encoder never writes a raw `,` or `:`, so their presence marks an
+  // old link and it's read the old way. Unknown keys and malformed tokens are
+  // ignored, so older links keep working.
 
   const shortHex = (hex) => {
     const h = hex.slice(1).toLowerCase();
@@ -981,7 +988,9 @@
     if (/^[0-9a-f]{3}$/i.test(s)) s = s.replace(/./g, "$&$&");
     return /^[0-9a-f]{6}$/i.test(s) ? `#${s.toLowerCase()}` : null;
   };
-  const encName = (n) => encodeURIComponent(n).replace(/%20/g, "+");
+  const encName = (n) => encodeURIComponent(n)
+    .replace(/[!'()*._~]/g, (ch) => `%${ch.charCodeAt(0).toString(16).toUpperCase()}`)
+    .replace(/%20/g, "+");
   const decName = (n) => {
     try { return decodeURIComponent(n.replace(/\+/g, " ")); } catch { return ""; }
   };
@@ -991,14 +1000,14 @@
     if (st.title) parts.push(`n=${encName(st.title)}`);
     const colors = st.colors.map((c) => {
       const letter = Object.keys(BUILTIN).find((k) => BUILTIN[k].key === c.key && BUILTIN[k].hex === c.hex);
-      return (letter ?? shortHex(c.hex)) + (c.name ? `:${encName(c.name)}` : "");
-    }).join(",");
-    if (colors !== "y,g,b") parts.push(`c=${colors}`);
+      return (letter ?? shortHex(c.hex)) + (c.name ? `_${encName(c.name)}` : "");
+    }).join("~");
+    if (colors !== "y~g~b") parts.push(`c=${colors}`);
     // Pause details are kept even while it's off, so nothing is lost.
     const p = st.pause, d = defaults().pause;
     const pauseTouched = p.onTap !== d.onTap || p.timer !== d.timer || p.hex !== d.hex || p.seconds !== d.seconds;
     if (p.enabled || pauseTouched) {
-      parts.push(`p=${p.enabled ? "" : "-"}${p.onTap ? "t" : ""}${p.timer ? p.seconds : ""}${p.hex !== d.hex ? `:${shortHex(p.hex)}` : ""}`);
+      parts.push(`p=${p.enabled ? "" : "-"}${p.onTap ? "t" : ""}${p.timer ? p.seconds : ""}${p.hex !== d.hex ? `_${shortHex(p.hex)}` : ""}`);
     }
     if (!p.timer && p.seconds !== d.seconds) parts.push(`s=${p.seconds}`);
     if (!(st.noRepeat && st.showName)) parts.push(`o=${st.noRepeat ? "r" : ""}${st.showName ? "n" : ""}`);
@@ -1015,8 +1024,10 @@
       if (k === "n") {
         st.title = decName(v).trim().slice(0, 40);
       } else if (k === "c") {
-        const colors = v.split(",").map((tok) => {
-          const [id, name] = tok.split(":");
+        const old = v.includes(",") || v.includes(":");
+        const colors = v.split(old ? "," : "~").map((tok) => {
+          const cut = tok.indexOf(old ? ":" : "_");
+          const [id, name] = cut < 0 ? [tok] : [tok.slice(0, cut), tok.slice(cut + 1)];
           const hex = parseHex(id);
           const c = BUILTIN[id] ? { ...BUILTIN[id] } : hex && { hex, ...(presetKey(hex) && { key: presetKey(hex) }) };
           if (c && name) c.name = decName(name).trim();
@@ -1024,7 +1035,7 @@
         }).filter(Boolean);
         if (colors.length) st.colors = colors;
       } else if (k === "p") {
-        const [flags, hex] = v.split(":");
+        const [flags, hex] = v.split(/[:_]/);
         const when = flags.replace(/^-/, "");
         const secs = parseInt(when.replace("t", ""), 10);
         st.pause.enabled = !flags.startsWith("-");
