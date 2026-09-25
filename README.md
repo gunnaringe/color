@@ -1,32 +1,70 @@
-# Farger · Colors
+# 🟡🟢🔵 Farger · Colors
 
-A full-screen random color picker for kids' games: each color means an activity
-("yellow = jump ten times"). Press **space** (or tap the screen) to reveal a random
-color.
+A full-screen random color picker for kids' games. Each color stands for an
+activity — *yellow = jump ten times, green = sit still, blue = spin around* —
+and a tap or a press of **space** reveals the next one.
 
-Live at **[color.haxxor.xyz](https://color.haxxor.xyz)**.
+**▶ [color.haxxor.xyz](https://color.haxxor.xyz)**
+
+<p align="center">
+  <img src="docs/start.png" width="240" alt="Start screen with the setup name and bouncing color dots">
+  &nbsp;
+  <img src="docs/color.png" width="240" alt="A green screen showing the activity “Sitt stille”">
+  &nbsp;
+  <img src="docs/settings.png" width="240" alt="Settings with named colors and toggles">
+</p>
+
+## How to play
+
+1. Open the page on a TV, tablet or laptop — ideally fullscreen (⛶ button).
+2. Open settings (⚙) and give each color an activity, e.g. *Hopp 10 ganger*.
+3. Press **space**, **Enter** or tap anywhere — a random color splashes in.
+4. Everyone does that color's activity. Repeat!
 
 ## Features
 
-- Starts on a black screen; space / Enter / tap shows a random color.
-- Customizable colors: tap the circle to pick a color, give it a name (optional).
-  Defaults are yellow, green and blue.
-- Optional pause screen between colors — either on the next tap or automatically
-  after a number of seconds — in a color of your choice (black by default).
-- "Never the same color twice in a row" and "show the color's name" toggles.
-- Norwegian and English (auto-detected, or pick one in settings).
-- Fullscreen button, and keeps the screen awake while playing.
-- Settings are stored in the browser (`localStorage`), per device. **Share setup**
-  makes a link with the whole setup (optionally named, e.g. "Morgenrutine").
-  Opening a link loads it onto that device once, with an undo — handy for
-  moving a setup to the tablet, or bookmarking several setups as presets.
-  Example: `color.haxxor.xyz/#n=Morgenrutine&c=y:Hopp,g:Sitt,e63946:Snurr&p=5`
-  (format documented in `public/index.html` above `encode`).
+- 🎨 **Your colors** — tap a circle to pick any color, give it a name (or leave it
+  blank). Starts with yellow, green and blue.
+- ⏸️ **Pause screen between colors** — optional, back to black (or any color)
+  either on the next tap or automatically after 1–60 seconds, with a little
+  countdown ring.
+- 🔁 **No repeats** — never the same color twice in a row (toggle).
+- 🏷️ **Show names** — the color's name in big letters (toggle).
+- 🔗 **Share setups** — name a setup ("Morgenrutine") and share it as a link.
+  Opening the link loads it on that device, with an undo. Bookmark several links
+  to switch between setups.
+- 🇳🇴🇬🇧 **Norwegian and English** — follows the browser, or pick one.
+- 📺 **Made for a big screen** — fullscreen button, keeps the screen awake, and
+  the buttons fade away while you play.
+- 🔒 **No accounts, no tracking** — settings live in the browser's
+  `localStorage`; share links travel in the URL fragment, which is never sent to
+  the server.
+
+## Share links
+
+The **Share setup** button builds a link like:
+
+```
+https://color.haxxor.xyz/#n=Morgenrutine&c=y:Hopp+10,g:Sitt,e63946:Snurr&p=5
+```
+
+Anything left at its default is omitted, so the links stay short and readable:
+
+| Key | Meaning | Examples |
+|-----|---------|----------|
+| `n` | Setup name | `n=Morgenrutine` |
+| `c` | Colors: a built-in letter (`y`/`g`/`b`) or a 3/6-digit hex, optionally `:name` | `c=y,g,b,f0f` · `c=e63946:Snurr+rundt` |
+| `p` | Pause screen on: `t` = on tap, or seconds; optional `:hex` pause color | `p=t` · `p=5` · `p=5:fff` |
+| `o` | Options when not both on: `r` = no repeats, `n` = show names | `o=n` · `o=` |
+| `l` | Language (auto if omitted) | `l=no` · `l=en` |
+
+Names are percent-encoded with `+` for spaces. Unknown keys and malformed parts
+are ignored, so links keep working as the format grows.
 
 ## Development
 
-Everything is in [`public/index.html`](public/index.html) — no build step. Open the
-file in a browser, or:
+It's a single file — [`public/index.html`](public/index.html) — with no build step
+and no dependencies. Open it directly in a browser, or run:
 
 ```sh
 npx wrangler dev
@@ -34,8 +72,8 @@ npx wrangler dev
 
 ## Deploy
 
-Served as a Cloudflare Worker with static assets (`wrangler.jsonc`), with
-`color.haxxor.xyz` as a custom domain:
+Served as a Cloudflare Worker with static assets, with `color.haxxor.xyz` as a
+custom domain (see [`wrangler.jsonc`](wrangler.jsonc)):
 
 ```sh
 npx wrangler deploy
