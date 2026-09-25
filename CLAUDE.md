@@ -17,10 +17,13 @@ Full-screen random color picker for kids' games, served at color.haxxor.xyz.
 - **Settings** persist in `localStorage` under `color-settings-v1`. `load()`
   merges stored settings over `defaults()`, so adding a new setting just needs a
   default; bump the key only for incompatible changes.
-- **Share links:** every `save()` also mirrors settings into the URL fragment
-  (`encode`/`decode`, format documented above them), omitting defaults. A
-  fragment on load wins over `localStorage`. Links are a public contract —
-  only add new keys, never change the meaning of existing ones.
+- **Share links:** `localStorage` is the single source of truth. The Share
+  button encodes settings into a URL fragment (`encode`/`decode`, format
+  documented above them, defaults omitted). Opening a link applies it once
+  (`takeHash` saves it and strips the fragment) and shows an undo toast. Links
+  are a public contract — only add new keys, never change existing ones.
+  User-provided text (setup/color names) comes from links: always render it
+  with `textContent`, never `innerHTML`.
 - **Style:** playful but tidy — rounded font (Fredoka), circles and pills only,
   no square boxes or sharp corners. Springy `--ease-pop` transitions.
 - **Testing:** open the file in headless Chromium via Playwright; check space,

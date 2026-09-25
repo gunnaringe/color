@@ -138,7 +138,15 @@
     text-align: center;
     padding: 0 2rem;
   }
+  #hint .title {
+    font-size: clamp(1.8rem, 7vmin, 3.5rem);
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+    margin-bottom: 0.25rem;
+  }
+  #hint .title:empty { display: none; }
   body.light #hint p { color: rgba(0, 0, 0, 0.5); }
+  body.light #hint .title { color: rgba(0, 0, 0, 0.8); }
   body.light #hint kbd { border-color: rgba(0, 0, 0, 0.3); }
   #hint kbd {
     font-family: inherit;
@@ -413,6 +421,33 @@
     font-variant-numeric: tabular-nums;
   }
 
+  .setup-name { padding-left: 1.1rem; }
+  #share { width: 100%; margin-top: 0.6rem; padding: 0.8rem; }
+
+  /* Toast after loading a link */
+  #toast {
+    position: fixed;
+    left: 50%;
+    bottom: max(1.5rem, env(safe-area-inset-bottom));
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    max-width: calc(100vw - 2rem);
+    padding: 0.5rem 0.5rem 0.5rem 1.4rem;
+    border-radius: 999px;
+    background: rgba(23, 22, 31, 0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+    font-weight: 500;
+    transform: translate(-50%, 200%);
+    transition: transform 0.45s var(--ease-pop);
+  }
+  #toast.show { transform: translate(-50%, 0); }
+  #toast span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #toast .pill { flex: none; padding: 0.55rem 1.1rem; }
+
   .footer { margin-top: 1.8rem; display: flex; flex-wrap: wrap; justify-content: center; gap: 0.6rem; }
   .pill {
     border: 0;
@@ -454,6 +489,7 @@
 </svg>
 
 <div id="hint">
+  <p class="title"></p>
   <div class="dots"></div>
   <p data-i18n-html="hint"></p>
 </div>
@@ -536,11 +572,23 @@
       </div>
     </section>
 
-    <div class="footer">
+    <section>
+      <h3 data-i18n="setup"></h3>
+      <div class="color-row setup-name">
+        <input class="name-input" id="setup-name" maxlength="40" spellcheck="false" data-i18n-placeholder="setupName">
+      </div>
       <button class="pill" id="share" data-i18n="share"></button>
+    </section>
+
+    <div class="footer">
       <button class="ghost" id="reset" data-i18n="reset"></button>
     </div>
   </div>
+</div>
+
+<div id="toast" role="status">
+  <span></span>
+  <button class="pill" id="undo" data-i18n="undo"></button>
 </div>
 
 <script>
@@ -571,6 +619,11 @@
       language: "Språk",
       reset: "Tilbakestill alt",
       share: "Del oppsett",
+      setup: "Oppsett",
+      setupName: "Navn på oppsettet (valgfritt)",
+      loaded: "Oppsett hentet fra lenke",
+      loadedNamed: "«{name}» er lastet inn",
+      undo: "Angre",
       copied: "Lenke kopiert!",
       copyThis: "Kopier denne lenken:",
       confirmReset: "Tilbakestille alle innstillinger?",
@@ -599,6 +652,11 @@
       language: "Language",
       reset: "Reset everything",
       share: "Share setup",
+      setup: "Setup",
+      setupName: "Name this setup (optional)",
+      loaded: "Setup loaded from link",
+      loadedNamed: "Loaded “{name}”",
+      undo: "Undo",
       copied: "Link copied!",
       copyThis: "Copy this link:",
       confirmReset: "Reset all settings?",
@@ -616,6 +674,7 @@
   };
 
   const defaults = () => ({
+    title: "",
     lang: "auto",
     colors: Object.values(BUILTIN).map((c) => ({ ...c })),
     noRepeat: true,
@@ -641,10 +700,13 @@
 
   // ---------- Share links ----------
   //
-  // Settings are mirrored into the URL fragment so the address bar is always a
-  // shareable link. Anything at its default is left out, so the defaults are
-  // just the bare URL. Format: `&`-separated `key=value` pairs.
+  // The Share button encodes the settings into the URL fragment. Opening such a
+  // link applies it once — it's saved to localStorage and stripped from the
+  // address bar, so bookmarks of the plain URL always get the latest setup.
+  // Anything at its default is left out. Format: `&`-separated `key=value`:
   //
+  //   n=Morgenrutine                  optional setup name, encoded like color
+  //                                   names below
   //   c=y:Hopp,g,e63946:Snurr+rundt   colors, comma-separated. A token is a
   //                                   built-in letter (y/g/b) or a 3/6-digit
   //                                   hex, plus an optional `:name`. Names are
@@ -673,6 +735,7 @@
 
   const encode = (st) => {
     const parts = [];
+    if (st.title) parts.push(`n=${encName(st.title)}`);
     const colors = st.colors.map((c) => {
       const letter = Object.keys(BUILTIN).find((k) => BUILTIN[k].key === c.key && BUILTIN[k].hex === c.hex);
       return (letter ?? shortHex(c.hex)) + (c.name ? `:${encName(c.name)}` : "");
@@ -693,7 +756,9 @@
       const i = part.indexOf("=");
       if (i < 0) continue;
       const k = part.slice(0, i), v = part.slice(i + 1);
-      if (k === "c") {
+      if (k === "n") {
+        st.title = decName(v).trim().slice(0, 40);
+      } else if (k === "c") {
         const colors = v.split(",").map((tok) => {
           const [id, name] = tok.split(":");
           const c = BUILTIN[id] ? { ...BUILTIN[id] } : parseHex(id) && { hex: parseHex(id) };
@@ -723,23 +788,17 @@
     return location.href.split("#")[0] + (hash ? `#${hash}` : "");
   };
 
-  const fromHash = () => location.hash.length > 1 && decode(location.hash.slice(1));
-
-  let settings = fromHash() || load();
-  const save = () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-    history.replaceState(null, "", shareUrl());
+  // Reads a share link from the address bar, if any, and strips it.
+  const takeHash = () => {
+    if (location.hash.length <= 1) return null;
+    const st = decode(location.hash.slice(1));
+    history.replaceState(null, "", location.href.split("#")[0]);
+    return st;
   };
-  save();
 
-  // Pasting a different link into an open tab.
-  addEventListener("hashchange", () => {
-    settings = fromHash() || defaults();
-    lastIndex = -1;
-    save();
-    renderAll();
-    if (state !== "color") paint(pauseHex());
-  });
+  const linked = takeHash();
+  let settings = linked || load();
+  const save = () => localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
 
   const $ = (sel) => document.querySelector(sel);
   const stage = $("#stage");
@@ -763,6 +822,7 @@
     document.documentElement.lang = lang();
     document.querySelectorAll("[data-i18n]").forEach((el) => (el.textContent = t(el.dataset.i18n)));
     document.querySelectorAll("[data-i18n-html]").forEach((el) => (el.innerHTML = t(el.dataset.i18nHtml)));
+    document.querySelectorAll("[data-i18n-placeholder]").forEach((el) => (el.placeholder = t(el.dataset.i18nPlaceholder)));
     document.querySelectorAll("[data-i18n-title]").forEach((el) => {
       el.title = t(el.dataset.i18nTitle);
       el.setAttribute("aria-label", el.title);
@@ -1042,8 +1102,15 @@
     });
   };
 
+  const renderTitle = () => {
+    hint.querySelector(".title").textContent = settings.title;
+    document.title = settings.title ? `${settings.title} · Farger` : "Farger · Colors";
+  };
+
   const renderAll = () => {
     applyI18n();
+    renderTitle();
+    $("#setup-name").value = settings.title;
     renderColors();
     renderDots();
     renderOptions();
@@ -1112,6 +1179,12 @@
     renderAll();
   });
 
+  $("#setup-name").addEventListener("input", (e) => {
+    settings.title = e.target.value.trim();
+    save();
+    renderTitle();
+  });
+
   $("#share").addEventListener("click", async () => {
     const url = shareUrl();
     const btn = $("#share");
@@ -1131,18 +1204,52 @@
 
   $("#reset").addEventListener("click", () => {
     if (!confirm(t("confirmReset"))) return;
-    settings = defaults();
+    apply(defaults());
+  });
+
+  const apply = (st) => {
+    settings = st;
     lastIndex = -1;
     save();
     renderAll();
+    if (state !== "color") paint(pauseHex());
+  };
+
+  // After loading a link, offer to go back to what this device had before.
+  const toast = $("#toast");
+  let toastTimer;
+  const announceLoaded = (previous) => {
+    toast.querySelector("span").textContent = settings.title
+      ? t("loadedNamed").replace("{name}", settings.title)
+      : t("loaded");
+    toast.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove("show"), 6000);
+    $("#undo").onclick = () => {
+      toast.classList.remove("show");
+      apply(previous);
+    };
+  };
+
+  // Opening another link in an already open tab.
+  addEventListener("hashchange", () => {
+    const previous = settings;
+    const st = takeHash();
+    if (!st) return;
+    apply(st);
+    announceLoaded(previous);
   });
 
   // ---------- Boot ----------
 
-  applyI18n();
-  renderDots();
+  renderAll();
   stage.style.backgroundColor = pauseHex();
   document.body.classList.toggle("light", isLight(pauseHex()));
+  if (linked) {
+    const previous = load();
+    save();
+    announceLoaded(previous);
+  }
 })();
 </script>
 </body>
