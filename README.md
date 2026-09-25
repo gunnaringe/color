@@ -27,8 +27,8 @@ and a tap or a press of **space** reveals the next one.
   Gul, …) or mix your own with hue and lightness sliders. Name each color with its
   activity, or keep the color's own name. Starts with yellow, green and blue.
 - ⏸️ **Pause screen between colors** — optional, back to black (or any color)
-  either on the next tap or automatically after 1–60 seconds, with a little
-  countdown ring.
+  on the next tap, automatically after 1–60 seconds (with a little countdown
+  ring), or both — whichever comes first.
 - 🔁 **No repeats** — never the same color twice in a row (toggle).
 - 🏷️ **Show names** — the color's name in big letters (toggle).
 - 🔗 **Share setups** — name a setup ("Morgenrutine") and share it as a link.
@@ -55,7 +55,7 @@ Anything left at its default is omitted, so the links stay short and readable:
 |-----|---------|----------|
 | `n` | Setup name | `n=Morgenrutine` |
 | `c` | Colors: a built-in letter (`y`/`g`/`b`) or a 3/6-digit hex, optionally `:name` | `c=y,g,b,f0f` · `c=e63946:Snurr+rundt` |
-| `p` | Pause screen on: `t` = on tap, or seconds; optional `:hex` pause color | `p=t` · `p=5` · `p=5:fff` |
+| `p` | Pause screen on: `t` = on tap and/or seconds; optional `:hex` pause color | `p=t` · `p=5` · `p=t5:fff` |
 | `o` | Options when not both on: `r` = no repeats, `n` = show names | `o=n` · `o=` |
 | `l` | Language (auto if omitted) | `l=no` · `l=en` |
 
