@@ -37,6 +37,9 @@ and a tap or a press of **space** reveals the next one.
 - 🇳🇴🇬🇧 **Norwegian and English** — follows the browser, or pick one.
 - 📺 **Made for a big screen** — fullscreen button, keeps the screen awake, and
   the buttons fade away while you play.
+- 📲 **Installable app** — add it to the home screen (Chrome/Android/Edge offer an
+  install button in settings; on iPad/iPhone use Share → Add to Home Screen). It
+  opens fullscreen and works offline.
 - 🔒 **No accounts, no tracking** — settings live in the browser's
   `localStorage`; share links travel in the URL fragment, which is never sent to
   the server.
@@ -69,11 +72,13 @@ the format grows.
 
 ## Development
 
-It's a single file — [`public/index.html`](public/index.html) — with no build step
-and no dependencies. Open it directly in a browser, or run:
+The app is [`public/index.html`](public/index.html) plus a web app manifest,
+service worker, icons and the self-hosted [Fredoka](https://github.com/hafontia/Fredoka-One)
+font (SIL OFL). No build step, no dependencies. Serve `public/` (the service
+worker needs http, not `file://`):
 
 ```sh
-npx wrangler dev
+npx wrangler dev          # or: cd public && python3 -m http.server
 ```
 
 ## Deploy

@@ -2,8 +2,16 @@
 
 Full-screen random color picker for kids' games, served at color.apphub.casa.
 
-- **Single file:** everything (markup, CSS, JS) lives in `public/index.html`. No
-  build step, no dependencies, no framework. Keep it that way.
+- **No build:** the app is `public/index.html` (markup, CSS, JS inline) plus the
+  PWA files next to it: `manifest.webmanifest`, `sw.js`, `icons/` and
+  self-hosted Fredoka in `fonts/` (SIL OFL — keep `fonts/OFL.txt`). No build
+  step, no dependencies, no framework, no third-party requests (so it works
+  offline). Keep it that way.
+- **Service worker:** the page is network-first (deploys show up on the next
+  load), other files cache-first with background refresh. Bump `CACHE` in
+  `sw.js` only when changing the precache list or strategy. Service workers
+  don't run from `file://` — test PWA/offline over `python3 -m http.server`
+  in `public/`.
 - **Deploy:** Cloudflare Worker with static assets. `wrangler.jsonc` pins the
   Worker name `color` and the `color.apphub.casa` custom domain — never
   rename the Worker, the domain is bound to it. Only `public/` is uploaded.
