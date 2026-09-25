@@ -1,12 +1,12 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  // Don't rename: the color.haxxor.xyz custom domain is bound to this Worker name.
-  "name": "color-haxxor-xyz",
+  // Don't rename: the color.apphub.casa custom domain is bound to this Worker name.
+  "name": "color-apphub-casa",
   "compatibility_date": "2026-09-25",
   "assets": {
     "directory": "public"
   },
   "routes": [
-    { "pattern": "color.haxxor.xyz", "custom_domain": true }
+    { "pattern": "color.apphub.casa", "custom_domain": true }
   ]
 }

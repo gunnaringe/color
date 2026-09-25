@@ -4,7 +4,7 @@ A full-screen random color picker for kids' games. Each color stands for an
 activity — *yellow = jump ten times, green = sit still, blue = spin around* —
 and a tap or a press of **space** reveals the next one.
 
-**▶ [color.haxxor.xyz](https://color.haxxor.xyz)**
+**▶ [color.apphub.casa](https://color.apphub.casa)**
 
 <p align="center">
   <img src="docs/start.png" width="240" alt="Start screen with the setup name and bouncing color dots">
@@ -45,7 +45,7 @@ and a tap or a press of **space** reveals the next one.
 The **Share setup** button builds a link like:
 
 ```
-https://color.haxxor.xyz/#n=Morgenrutine&c=y:Hopp+10,g:Sitt,e63946:Snurr&p=5
+https://color.apphub.casa/#n=Morgenrutine&c=y:Hopp+10,g:Sitt,e63946:Snurr&p=5
 ```
 
 Anything left at its default is omitted, so the links stay short and readable:
@@ -72,7 +72,7 @@ npx wrangler dev
 
 ## Deploy
 
-Served as a Cloudflare Worker with static assets, with `color.haxxor.xyz` as a
+Served as a Cloudflare Worker with static assets, with `color.apphub.casa` as a
 custom domain (see [`wrangler.jsonc`](wrangler.jsonc)):
 
 ```sh

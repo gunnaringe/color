@@ -1,11 +1,11 @@
 # color
 
-Full-screen random color picker for kids' games, served at color.haxxor.xyz.
+Full-screen random color picker for kids' games, served at color.apphub.casa.
 
 - **Single file:** everything (markup, CSS, JS) lives in `public/index.html`. No
   build step, no dependencies, no framework. Keep it that way.
 - **Deploy:** Cloudflare Worker with static assets. `wrangler.jsonc` pins the
-  Worker name `color-haxxor-xyz` and the `color.haxxor.xyz` custom domain — never
+  Worker name `color-apphub-casa` and the `color.apphub.casa` custom domain — never
   rename the Worker, the domain is bound to it. Only `public/` is uploaded.
   A git push does **not** deploy unless Workers Builds is connected; otherwise the
   user runs `npx wrangler deploy`. Agent sessions can't deploy (Cloudflare
