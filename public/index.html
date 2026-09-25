@@ -548,6 +548,53 @@
   .setup-name { padding-left: 1.1rem; }
   #share { width: 100%; margin-top: 0.6rem; padding: 0.8rem; }
 
+  /* Confirm dialog */
+  #confirm {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    display: grid;
+    place-items: center;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s, visibility 0.2s;
+  }
+  /* Visible at once when opening, so the Cancel button can take focus. */
+  #confirm.open { opacity: 1; visibility: visible; transition: opacity 0.2s, visibility 0s; }
+  #confirm .card {
+    width: min(100%, 21rem);
+    padding: 1.75rem 1.5rem 1.5rem;
+    border-radius: 2.25rem;
+    background: linear-gradient(160deg, #2a2836, #1d1c27 70%);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+    text-align: center;
+    transform: scale(0.85);
+    transition: transform 0.4s var(--ease-pop);
+  }
+  #confirm.open .card { transform: none; }
+  #confirm .badge {
+    width: 3.75rem;
+    height: 3.75rem;
+    margin: 0 auto 1rem;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    color: #ff9dbb;
+    background: rgba(255, 93, 143, 0.16);
+  }
+  #confirm .badge svg { width: 1.75rem; height: 1.75rem; }
+  #confirm.open .badge svg { animation: spin-back 0.7s var(--ease-pop) 0.1s; }
+  @keyframes spin-back { from { transform: rotate(160deg); } }
+  #confirm h4 { margin: 0; font-size: 1.35rem; font-weight: 600; }
+  #confirm p { margin: 0.5rem 0 1.5rem; color: var(--muted); line-height: 1.4; }
+  #confirm .actions { display: flex; gap: 0.6rem; }
+  #confirm .actions button { flex: 1; padding: 0.8rem 1rem; }
+  .pill.danger { background: #ff5d8f; color: #fff; }
+
   /* Toast after loading a link */
   #toast {
     position: fixed;
@@ -720,6 +767,20 @@
   </div>
 </div>
 
+<div id="confirm">
+  <div class="card" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-text">
+    <div class="badge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1"/><path d="M3.5 4v4.5H8"/></svg>
+    </div>
+    <h4 id="confirm-title"></h4>
+    <p id="confirm-text"></p>
+    <div class="actions">
+      <button class="ghost" id="confirm-no"></button>
+      <button class="pill danger" id="confirm-yes"></button>
+    </div>
+  </div>
+</div>
+
 <div id="toast" role="status">
   <span></span>
   <button class="pill" id="undo" data-i18n="undo"></button>
@@ -760,7 +821,9 @@
       undo: "Angre",
       copied: "Lenke kopiert!",
       copyThis: "Kopier denne lenken:",
-      confirmReset: "Tilbakestille alle innstillinger?",
+      confirmReset: "Tilbakestille alt?",
+      confirmResetText: "Farger, navn og alle innstillinger går tilbake til standard.",
+      cancel: "Avbryt",
       hue: "Fargetone", lightness: "Lyshet",
       red: "Rød", orange: "Oransje", yellow: "Gul", lime: "Limegrønn", green: "Grønn",
       turquoise: "Turkis", lightblue: "Lyseblå", blue: "Blå", navy: "Mørkeblå", purple: "Lilla",
@@ -796,7 +859,9 @@
       undo: "Undo",
       copied: "Link copied!",
       copyThis: "Copy this link:",
-      confirmReset: "Reset all settings?",
+      confirmReset: "Reset everything?",
+      confirmResetText: "Colors, names and all settings go back to the defaults.",
+      cancel: "Cancel",
       hue: "Hue", lightness: "Lightness",
       red: "Red", orange: "Orange", yellow: "Yellow", lime: "Lime", green: "Green",
       turquoise: "Turquoise", lightblue: "Light blue", blue: "Blue", navy: "Navy", purple: "Purple",
@@ -1484,8 +1549,50 @@
     }
   });
 
-  $("#reset").addEventListener("click", () => {
-    if (!confirm(t("confirmReset"))) return;
+  // ---------- Confirm dialog ----------
+
+  const confirmEl = $("#confirm");
+
+  // Resolves true/false. Cancel is focused, so an accidental Enter is harmless.
+  const confirmDialog = ({ title, text, yes }) => new Promise((resolve) => {
+    $("#confirm-title").textContent = title;
+    $("#confirm-text").textContent = text;
+    $("#confirm-yes").textContent = yes;
+    $("#confirm-no").textContent = t("cancel");
+    const returnFocus = document.activeElement;
+    confirmEl.classList.add("open");
+    $("#confirm-no").focus();
+
+    const done = (answer) => {
+      confirmEl.classList.remove("open");
+      confirmEl.removeEventListener("click", onClick);
+      document.removeEventListener("keydown", onKey, true);
+      returnFocus?.focus({ preventScroll: true });
+      resolve(answer);
+    };
+    const onClick = (e) => {
+      if (e.target.closest("#confirm-yes")) done(true);
+      else if (e.target.closest("#confirm-no") || e.target === confirmEl) done(false);
+    };
+    const onKey = (e) => {
+      // Don't let Escape also close settings, or Space draw a color.
+      e.stopPropagation();
+      if (!confirmEl.contains(e.target) && e.key !== "Escape" && e.key !== "Tab") e.preventDefault();
+      if (e.key === "Escape") done(false);
+      // Keep Tab inside the two buttons.
+      if (e.key === "Tab") {
+        e.preventDefault();
+        (document.activeElement === $("#confirm-no") ? $("#confirm-yes") : $("#confirm-no")).focus();
+      }
+    };
+    confirmEl.addEventListener("click", onClick);
+    // Capture on document so keys are ours wherever focus ended up.
+    document.addEventListener("keydown", onKey, true);
+  });
+
+  $("#reset").addEventListener("click", async () => {
+    const ok = await confirmDialog({ title: t("confirmReset"), text: t("confirmResetText"), yes: t("reset") });
+    if (!ok) return;
     apply(defaults());
   });
 
