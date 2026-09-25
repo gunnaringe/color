@@ -1439,8 +1439,19 @@
   document.addEventListener("pointerdown", (e) => {
     if (pickerAnchor && !picker.contains(e.target) && !pickerAnchor.contains(e.target)) closePicker();
   }, true);
-  $("#sheet").addEventListener("scroll", closePicker, { passive: true });
-  addEventListener("resize", closePicker);
+  // Follow the swatch instead of closing: on phones, tapping a swatch right after
+  // typing a name dismisses the keyboard (a resize), and a tap during momentum
+  // scrolling still fires scroll events — closing on those made the picker seem
+  // not to open. Only close once the swatch has scrolled out of the sheet.
+  const followAnchor = () => {
+    if (!pickerAnchor) return;
+    const a = pickerAnchor.getBoundingClientRect();
+    const view = $("#sheet").getBoundingClientRect();
+    if (a.bottom < view.top || a.top > view.bottom) closePicker();
+    else placePicker();
+  };
+  $("#sheet").addEventListener("scroll", followAnchor, { passive: true });
+  addEventListener("resize", followAnchor);
 
   $("#lang").addEventListener("click", (e) => {
     const b = e.target.closest("button");
