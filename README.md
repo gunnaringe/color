@@ -16,7 +16,11 @@ Live at **[color.haxxor.xyz](https://color.haxxor.xyz)**.
 - "Never the same color twice in a row" and "show the color's name" toggles.
 - Norwegian and English (auto-detected, or pick one in settings).
 - Fullscreen button, and keeps the screen awake while playing.
-- Settings are stored in the browser (`localStorage`), per device.
+- Settings are stored in the browser (`localStorage`) and mirrored into the URL,
+  so the address bar is always a share link — **Share setup** copies it (or opens
+  the share sheet on phones). Example:
+  `color.haxxor.xyz/#c=y:Hopp,g:Sitt,e63946:Snurr&p=5` (format documented in
+  `public/index.html` above `encode`).
 
 ## Development
 

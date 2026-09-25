@@ -413,7 +413,18 @@
     font-variant-numeric: tabular-nums;
   }
 
-  .footer { margin-top: 1.8rem; display: flex; justify-content: center; }
+  .footer { margin-top: 1.8rem; display: flex; flex-wrap: wrap; justify-content: center; gap: 0.6rem; }
+  .pill {
+    border: 0;
+    padding: 0.7rem 1.4rem;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #17161f;
+    font-weight: 600;
+    transition: transform 0.25s var(--ease-pop), filter 0.2s;
+  }
+  .pill:hover { transform: scale(1.05); filter: brightness(1.08); }
+  .pill:active { transform: scale(0.95); }
   .ghost {
     border: 0;
     padding: 0.7rem 1.4rem;
@@ -526,6 +537,7 @@
     </section>
 
     <div class="footer">
+      <button class="pill" id="share" data-i18n="share"></button>
       <button class="ghost" id="reset" data-i18n="reset"></button>
     </div>
   </div>
@@ -558,6 +570,9 @@
       pauseColor: "Pausefarge",
       language: "Språk",
       reset: "Tilbakestill alt",
+      share: "Del oppsett",
+      copied: "Lenke kopiert!",
+      copyThis: "Kopier denne lenken:",
       confirmReset: "Tilbakestille alle innstillinger?",
       yellow: "Gul", green: "Grønn", blue: "Blå",
     },
@@ -583,20 +598,26 @@
       pauseColor: "Pause color",
       language: "Language",
       reset: "Reset everything",
+      share: "Share setup",
+      copied: "Link copied!",
+      copyThis: "Copy this link:",
       confirmReset: "Reset all settings?",
       yellow: "Yellow", green: "Green", blue: "Blue",
     },
   };
 
-  // Default colors carry an i18n `key` so their names follow the language
-  // until someone renames them, at which point `name` takes over.
+  // Built-in colors carry an i18n `key` so their default name follows the
+  // language. A custom `name` overrides it; clearing the name brings it back.
+  // The letter is their short form in share links.
+  const BUILTIN = {
+    y: { hex: "#ffd23f", key: "yellow" },
+    g: { hex: "#34c759", key: "green" },
+    b: { hex: "#3a86ff", key: "blue" },
+  };
+
   const defaults = () => ({
     lang: "auto",
-    colors: [
-      { hex: "#ffd23f", key: "yellow" },
-      { hex: "#34c759", key: "green" },
-      { hex: "#3a86ff", key: "blue" },
-    ],
+    colors: Object.values(BUILTIN).map((c) => ({ ...c })),
     noRepeat: true,
     showName: true,
     pause: { enabled: false, mode: "tap", seconds: 5, hex: "#000000" },
@@ -618,8 +639,107 @@
     }
   };
 
-  let settings = load();
-  const save = () => localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  // ---------- Share links ----------
+  //
+  // Settings are mirrored into the URL fragment so the address bar is always a
+  // shareable link. Anything at its default is left out, so the defaults are
+  // just the bare URL. Format: `&`-separated `key=value` pairs.
+  //
+  //   c=y:Hopp,g,e63946:Snurr+rundt   colors, comma-separated. A token is a
+  //                                   built-in letter (y/g/b) or a 3/6-digit
+  //                                   hex, plus an optional `:name`. Names are
+  //                                   percent-encoded, with `+` for spaces.
+  //   p=t | p=5 | p=5:fff             pause screen on: `t` = on tap, a number =
+  //                                   after that many seconds; optional `:hex`
+  //                                   pause color (black if left out)
+  //   o=r | o=n | o=                  options, only if not both on:
+  //                                   r = no repeats, n = show names
+  //   l=no | l=en                     language (auto if left out)
+  //
+  // Unknown keys and malformed tokens are ignored, so older links keep working.
+
+  const shortHex = (hex) => {
+    const h = hex.slice(1).toLowerCase();
+    return h[0] === h[1] && h[2] === h[3] && h[4] === h[5] ? h[0] + h[2] + h[4] : h;
+  };
+  const parseHex = (s) => {
+    if (/^[0-9a-f]{3}$/i.test(s)) s = s.replace(/./g, "$&$&");
+    return /^[0-9a-f]{6}$/i.test(s) ? `#${s.toLowerCase()}` : null;
+  };
+  const encName = (n) => encodeURIComponent(n).replace(/%20/g, "+");
+  const decName = (n) => {
+    try { return decodeURIComponent(n.replace(/\+/g, " ")); } catch { return ""; }
+  };
+
+  const encode = (st) => {
+    const parts = [];
+    const colors = st.colors.map((c) => {
+      const letter = Object.keys(BUILTIN).find((k) => BUILTIN[k].key === c.key && BUILTIN[k].hex === c.hex);
+      return (letter ?? shortHex(c.hex)) + (c.name ? `:${encName(c.name)}` : "");
+    }).join(",");
+    if (colors !== "y,g,b") parts.push(`c=${colors}`);
+    const p = st.pause;
+    if (p.enabled) {
+      parts.push(`p=${p.mode === "timer" ? p.seconds : "t"}${p.hex !== "#000000" ? `:${shortHex(p.hex)}` : ""}`);
+    }
+    if (!(st.noRepeat && st.showName)) parts.push(`o=${st.noRepeat ? "r" : ""}${st.showName ? "n" : ""}`);
+    if (st.lang !== "auto") parts.push(`l=${st.lang}`);
+    return parts.join("&");
+  };
+
+  const decode = (hash) => {
+    const st = defaults();
+    for (const part of hash.split("&")) {
+      const i = part.indexOf("=");
+      if (i < 0) continue;
+      const k = part.slice(0, i), v = part.slice(i + 1);
+      if (k === "c") {
+        const colors = v.split(",").map((tok) => {
+          const [id, name] = tok.split(":");
+          const c = BUILTIN[id] ? { ...BUILTIN[id] } : parseHex(id) && { hex: parseHex(id) };
+          if (c && name) c.name = decName(name).trim();
+          return c;
+        }).filter(Boolean);
+        if (colors.length) st.colors = colors;
+      } else if (k === "p") {
+        const [mode, hex] = v.split(":");
+        const secs = parseInt(mode, 10);
+        st.pause.enabled = true;
+        st.pause.mode = mode === "t" ? "tap" : "timer";
+        if (secs) st.pause.seconds = Math.min(60, Math.max(1, secs));
+        if (hex && parseHex(hex)) st.pause.hex = parseHex(hex);
+      } else if (k === "o") {
+        st.noRepeat = v.includes("r");
+        st.showName = v.includes("n");
+      } else if (k === "l" && I18N[v]) {
+        st.lang = v;
+      }
+    }
+    return st;
+  };
+
+  const shareUrl = () => {
+    const hash = encode(settings);
+    return location.href.split("#")[0] + (hash ? `#${hash}` : "");
+  };
+
+  const fromHash = () => location.hash.length > 1 && decode(location.hash.slice(1));
+
+  let settings = fromHash() || load();
+  const save = () => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+    history.replaceState(null, "", shareUrl());
+  };
+  save();
+
+  // Pasting a different link into an open tab.
+  addEventListener("hashchange", () => {
+    settings = fromHash() || defaults();
+    lastIndex = -1;
+    save();
+    renderAll();
+    if (state !== "color") paint(pauseHex());
+  });
 
   const $ = (sel) => document.querySelector(sel);
   const stage = $("#stage");
@@ -843,6 +963,8 @@
       picker.setAttribute("aria-label", t("pickColor"));
       picker.addEventListener("input", () => {
         c.hex = picker.value;
+        // A recolored built-in is no longer "yellow"; keep only a custom name.
+        delete c.key;
         swatch.style.setProperty("--c", c.hex);
         save();
         renderDots();
@@ -851,12 +973,11 @@
 
       const name = document.createElement("input");
       name.className = "name-input";
-      name.value = colorName(c);
-      name.placeholder = t("namePlaceholder");
+      name.value = c.name || "";
+      name.placeholder = c.key ? t(c.key) : t("namePlaceholder");
       name.spellcheck = false;
       name.addEventListener("input", () => {
         c.name = name.value.trim();
-        delete c.key;
         save();
       });
 
@@ -989,6 +1110,23 @@
     settings.lang = b.dataset.value;
     save();
     renderAll();
+  });
+
+  $("#share").addEventListener("click", async () => {
+    const url = shareUrl();
+    const btn = $("#share");
+    // Native share sheet on phones/tablets; clipboard elsewhere.
+    if (navigator.share && matchMedia("(pointer: coarse)").matches) {
+      try { await navigator.share({ title: document.title, url }); } catch {}
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      btn.textContent = t("copied");
+      setTimeout(() => (btn.textContent = t("share")), 2000);
+    } catch {
+      prompt(t("copyThis"), url);
+    }
   });
 
   $("#reset").addEventListener("click", () => {
