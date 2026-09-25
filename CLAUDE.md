@@ -13,7 +13,10 @@ Full-screen random color picker for kids' games, served at color.apphub.casa.
 - **i18n:** all UI strings go in the `I18N` object (`no` and `en`) and are wired
   via `data-i18n` / `data-i18n-html` / `data-i18n-title`. Built-in colors
   (`BUILTIN`) carry a `key` whose translated name is the default; a custom `name`
-  overrides it, clearing it restores the default. Recoloring drops the `key`.
+  overrides it, clearing it restores the default. The color picker is custom
+  (no native `<input type=color>` — its popup is unstyled and half-translated):
+  picking one of the `PRESETS` sets `key` to that preset, any other hex drops it,
+  and `decode` maps preset hexes in links back to their `key`.
 - **Settings** persist in `localStorage` under `color-settings-v1`. `load()`
   merges stored settings over `defaults()`, so adding a new setting just needs a
   default; bump the key only for incompatible changes.

@@ -288,6 +288,8 @@
 
   .swatch {
     position: relative;
+    border: 0;
+    padding: 0;
     width: 2.6rem;
     height: 2.6rem;
     flex: none;
@@ -299,17 +301,103 @@
   }
   .swatch:hover { transform: scale(1.1) rotate(-6deg); }
   .swatch:active { transform: scale(0.92); }
-  .swatch input {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
+  .swatch:focus-visible { outline: 0; box-shadow: 0 0 0 3px var(--accent); }
+  .swatch[aria-expanded="true"] { box-shadow: 0 0 0 3px #fff, 0 4px 14px color-mix(in srgb, var(--c) 45%, transparent); }
+
+  /* ---------- Color picker popover ---------- */
+
+  #picker {
+    position: fixed;
+    z-index: 30;
+    width: 18.5rem;
+    padding: 1.1rem;
+    border-radius: 2rem;
+    background: #262432;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.07);
     opacity: 0;
-    cursor: pointer;
-    border: 0;
-    padding: 0;
+    visibility: hidden;
+    transform: scale(0.85);
+    transform-origin: var(--origin, top left);
+    transition: opacity 0.2s, visibility 0.2s, transform 0.35s var(--ease-pop);
   }
-  .swatch:focus-within { box-shadow: 0 0 0 3px var(--accent); }
+  #picker.open { opacity: 1; visibility: visible; transform: none; }
+
+  .palette {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.6rem;
+    justify-items: center;
+  }
+  .palette button {
+    width: 2.6rem;
+    height: 2.6rem;
+    border: 0;
+    border-radius: 50%;
+    background: var(--c);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+    display: grid;
+    place-items: center;
+    color: var(--ink);
+    transition: transform 0.25s var(--ease-pop), box-shadow 0.2s;
+  }
+  .palette button:hover { transform: scale(1.15); }
+  .palette button:active { transform: scale(0.9); }
+  .palette button svg { width: 1.2rem; height: 1.2rem; opacity: 0; transform: scale(0.4); transition: 0.3s var(--ease-pop); }
+  .palette button[aria-pressed="true"] { box-shadow: 0 0 0 3px #262432, 0 0 0 5.5px var(--ring); }
+  .palette button[aria-pressed="true"] svg { opacity: 1; transform: none; }
+
+  .custom {
+    margin-top: 1.1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--line);
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 0.75rem 1rem;
+  }
+  .custom .sliders { display: flex; flex-direction: column; gap: 0.85rem; }
+  .custom .preview {
+    width: 3.4rem;
+    height: 3.4rem;
+    border-radius: 50%;
+    background: var(--c);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.12), 0 6px 18px color-mix(in srgb, var(--c) 50%, transparent);
+    transition: background 0.15s;
+  }
+
+  /* Pill sliders with a round handle */
+  .slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 1.4rem;
+    margin: 0;
+    border-radius: 999px;
+    background: var(--track);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+  }
+  .slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 1.6rem;
+    height: 1.6rem;
+    border-radius: 50%;
+    background: var(--c);
+    border: 4px solid #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    transition: transform 0.2s var(--ease-pop);
+  }
+  .slider::-moz-range-thumb {
+    width: 1.1rem;
+    height: 1.1rem;
+    border-radius: 50%;
+    background: var(--c);
+    border: 4px solid #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  }
+  .slider:active::-webkit-slider-thumb { transform: scale(1.2); }
+  .slider:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  #hue { --track: linear-gradient(90deg, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00); }
 
   .name-input {
     flex: 1;
@@ -557,7 +645,7 @@
         </div>
         <div class="row" data-pause>
           <span class="text" data-i18n="pauseColor"></span>
-          <label class="swatch" id="pause-swatch"><input type="color" id="pause-color" data-i18n-title="pauseColor"></label>
+          <button class="swatch" id="pause-swatch" data-i18n-title="pauseColor"></button>
         </div>
       </div>
     </section>
@@ -583,6 +671,17 @@
     <div class="footer">
       <button class="ghost" id="reset" data-i18n="reset"></button>
     </div>
+  </div>
+</div>
+
+<div id="picker" role="dialog">
+  <div class="palette"></div>
+  <div class="custom">
+    <div class="sliders">
+      <input type="range" class="slider" id="hue" min="0" max="359" data-i18n-title="hue">
+      <input type="range" class="slider" id="light" min="0" max="100" data-i18n-title="lightness">
+    </div>
+    <div class="preview"></div>
   </div>
 </div>
 
@@ -627,7 +726,10 @@
       copied: "Lenke kopiert!",
       copyThis: "Kopier denne lenken:",
       confirmReset: "Tilbakestille alle innstillinger?",
-      yellow: "Gul", green: "Grønn", blue: "Blå",
+      hue: "Fargetone", lightness: "Lyshet",
+      red: "Rød", orange: "Oransje", yellow: "Gul", lime: "Limegrønn", green: "Grønn",
+      turquoise: "Turkis", lightblue: "Lyseblå", blue: "Blå", navy: "Mørkeblå", purple: "Lilla",
+      pink: "Rosa", brown: "Brun", white: "Hvit", grey: "Grå", black: "Svart",
     },
     en: {
       hint: "Press <kbd>space</kbd> or tap the screen",
@@ -660,13 +762,25 @@
       copied: "Link copied!",
       copyThis: "Copy this link:",
       confirmReset: "Reset all settings?",
-      yellow: "Yellow", green: "Green", blue: "Blue",
+      hue: "Hue", lightness: "Lightness",
+      red: "Red", orange: "Orange", yellow: "Yellow", lime: "Lime", green: "Green",
+      turquoise: "Turquoise", lightblue: "Light blue", blue: "Blue", navy: "Navy", purple: "Purple",
+      pink: "Pink", brown: "Brown", white: "White", grey: "Grey", black: "Black",
     },
   };
 
   // Built-in colors carry an i18n `key` so their default name follows the
   // language. A custom `name` overrides it; clearing the name brings it back.
   // The letter is their short form in share links.
+  // The picker's palette. Picking one of these gives the color a translated
+  // default name (its `key`); any other hex has no default name.
+  const PRESETS = {
+    red: "#ff3b30", orange: "#ff8a00", yellow: "#ffd23f", lime: "#a3e635", green: "#34c759",
+    turquoise: "#14b8a6", lightblue: "#5ac8fa", blue: "#3a86ff", navy: "#1e3a8a", purple: "#a855f7",
+    pink: "#ff5d8f", brown: "#8b5a2b", white: "#ffffff", grey: "#9ca3af", black: "#000000",
+  };
+  const presetKey = (hex) => Object.keys(PRESETS).find((k) => PRESETS[k] === hex.toLowerCase());
+
   const BUILTIN = {
     y: { hex: "#ffd23f", key: "yellow" },
     g: { hex: "#34c759", key: "green" },
@@ -761,7 +875,8 @@
       } else if (k === "c") {
         const colors = v.split(",").map((tok) => {
           const [id, name] = tok.split(":");
-          const c = BUILTIN[id] ? { ...BUILTIN[id] } : parseHex(id) && { hex: parseHex(id) };
+          const hex = parseHex(id);
+          const c = BUILTIN[id] ? { ...BUILTIN[id] } : hex && { hex, ...(presetKey(hex) && { key: presetKey(hex) }) };
           if (c && name) c.name = decName(name).trim();
           return c;
         }).filter(Boolean);
@@ -845,10 +960,8 @@
     return `rgb(${n >> 16}, ${(n >> 8) & 255}, ${n & 255})`;
   };
 
-  const randomHex = () => {
-    // Bright, saturated colors read best on a big screen.
-    const h = Math.floor(Math.random() * 360);
-    const s = 0.75, l = 0.55;
+  const hslToHex = (h, s, l) => {
+    s /= 100; l /= 100;
     const f = (n) => {
       const k = (n + h / 30) % 12;
       const c = l - s * Math.min(l, 1 - l) * Math.max(-1, Math.min(k - 3, 9 - k, 1));
@@ -856,6 +969,9 @@
     };
     return `#${f(0)}${f(8)}${f(4)}`;
   };
+
+  // Bright, saturated colors read best on a big screen.
+  const randomHex = () => hslToHex(Math.floor(Math.random() * 360), 75, 55);
 
   // ---------- Stage ----------
 
@@ -953,7 +1069,7 @@
 
   document.addEventListener("keydown", (e) => {
     if (scrim.classList.contains("open")) {
-      if (e.key === "Escape") closeSettings();
+      if (e.key === "Escape") pickerAnchor ? closePicker() : closeSettings();
       return;
     }
     if (e.key === " " || e.key === "Enter") {
@@ -1013,23 +1129,22 @@
       const row = document.createElement("div");
       row.className = "color-row";
 
-      const swatch = document.createElement("label");
+      const swatch = document.createElement("button");
       swatch.className = "swatch";
       swatch.style.setProperty("--c", c.hex);
       swatch.title = t("pickColor");
-      const picker = document.createElement("input");
-      picker.type = "color";
-      picker.value = c.hex;
-      picker.setAttribute("aria-label", t("pickColor"));
-      picker.addEventListener("input", () => {
-        c.hex = picker.value;
-        // A recolored built-in is no longer "yellow"; keep only a custom name.
-        delete c.key;
-        swatch.style.setProperty("--c", c.hex);
+      swatch.setAttribute("aria-label", t("pickColor"));
+      swatch.addEventListener("click", () => openPicker(swatch, c.hex, (hex) => {
+        c.hex = hex;
+        // Presets bring their own default name; other colors have none.
+        const key = presetKey(hex);
+        if (key) c.key = key;
+        else delete c.key;
+        name.placeholder = key ? t(key) : t("namePlaceholder");
+        swatch.style.setProperty("--c", hex);
         save();
         renderDots();
-      });
-      swatch.append(picker);
+      }));
 
       const name = document.createElement("input");
       name.className = "name-input";
@@ -1093,7 +1208,6 @@
     $("#sec").textContent = `${settings.pause.seconds} s`;
     $("#sec-down").disabled = settings.pause.seconds <= 1;
     $("#sec-up").disabled = settings.pause.seconds >= 60;
-    $("#pause-color").value = settings.pause.hex;
     $("#pause-swatch").style.setProperty("--c", settings.pause.hex);
     // Segmented thumbs measure their buttons, so they need the sheet laid out.
     requestAnimationFrame(() => {
@@ -1123,6 +1237,7 @@
   };
 
   const closeSettings = () => {
+    closePicker();
     scrim.classList.remove("open");
     if (state === "color") {
       // Opening settings stopped the timer; give the current color a fresh one.
@@ -1165,11 +1280,111 @@
   $("#sec-down").addEventListener("click", () => step(-1));
   $("#sec-up").addEventListener("click", () => step(1));
 
-  $("#pause-color").addEventListener("input", (e) => {
-    settings.pause.hex = e.target.value;
-    $("#pause-swatch").style.setProperty("--c", settings.pause.hex);
+  $("#pause-swatch").addEventListener("click", (e) => openPicker(e.currentTarget, settings.pause.hex, (hex) => {
+    settings.pause.hex = hex;
+    $("#pause-swatch").style.setProperty("--c", hex);
     save();
-  });
+  }));
+
+  // ---------- Color picker ----------
+  //
+  // One shared popover: a palette of named presets plus hue/lightness sliders
+  // for anything else. `onPick` runs live on every change.
+
+  const picker = $("#picker");
+  const hueEl = $("#hue");
+  const lightEl = $("#light");
+  const SAT = 85;
+  let pickerAnchor = null;
+  let onPick = null;
+
+  const hexToHsl = (hex) => {
+    const n = parseInt(hex.slice(1), 16);
+    const [r, g, b] = [n >> 16, (n >> 8) & 255, n & 255].map((v) => v / 255);
+    const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+    const l = (max + min) / 2;
+    let h = 0;
+    if (d) h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    return [Math.round((h * 60 + 360) % 360), Math.round(l * 100)];
+  };
+
+  const check = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  const palette = picker.querySelector(".palette");
+  for (const [key, hex] of Object.entries(PRESETS)) {
+    const b = document.createElement("button");
+    b.dataset.hex = hex;
+    b.dataset.key = key;
+    b.style.setProperty("--c", hex);
+    b.style.setProperty("--ink", isLight(hex) ? "#000" : "#fff");
+    // A ring in the color itself would vanish around black/navy on the dark popover.
+    b.style.setProperty("--ring", ["black", "navy", "brown"].includes(key) ? "#fff" : hex);
+    b.innerHTML = check;
+    b.addEventListener("click", () => pickHex(hex));
+    palette.append(b);
+  }
+
+  const showPicked = (hex) => {
+    picker.style.setProperty("--c", hex);
+    palette.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.hex === hex));
+    lightEl.style.setProperty("--track",
+      `linear-gradient(90deg, #000, ${hslToHex(+hueEl.value, SAT, 50)}, #fff)`);
+  };
+
+  const pickHex = (hex) => {
+    const [h, l] = hexToHsl(hex);
+    // Greys have no hue; keep the slider where it was.
+    if (!["#ffffff", "#000000", PRESETS.grey].includes(hex)) hueEl.value = h;
+    lightEl.value = l;
+    showPicked(hex);
+    onPick?.(hex);
+  };
+
+  const fromSliders = () => {
+    const hex = hslToHex(+hueEl.value, SAT, +lightEl.value);
+    showPicked(hex);
+    onPick?.(hex);
+  };
+  hueEl.addEventListener("input", fromSliders);
+  lightEl.addEventListener("input", fromSliders);
+
+  const placePicker = () => {
+    const a = pickerAnchor.getBoundingClientRect();
+    const w = picker.offsetWidth, h = picker.offsetHeight, m = 12;
+    const below = a.bottom + m + h <= innerHeight - m;
+    const top = below ? a.bottom + m : Math.max(m, a.top - m - h);
+    const left = Math.min(Math.max(m, a.left + a.width / 2 - 36), innerWidth - w - m);
+    picker.style.top = `${top}px`;
+    picker.style.left = `${left}px`;
+    picker.style.setProperty("--origin", `${a.left + a.width / 2 - left}px ${below ? "0" : "100%"}`);
+  };
+
+  const openPicker = (anchor, hex, cb) => {
+    if (pickerAnchor === anchor) return closePicker();
+    closePicker();
+    pickerAnchor = anchor;
+    onPick = cb;
+    anchor.setAttribute("aria-expanded", "true");
+    const [h, l] = hexToHsl(hex);
+    hueEl.value = h;
+    lightEl.value = l;
+    showPicked(hex);
+    placePicker();
+    picker.classList.add("open");
+  };
+
+  const closePicker = () => {
+    if (!pickerAnchor) return;
+    pickerAnchor.setAttribute("aria-expanded", "false");
+    pickerAnchor = null;
+    onPick = null;
+    picker.classList.remove("open");
+  };
+
+  document.addEventListener("pointerdown", (e) => {
+    if (pickerAnchor && !picker.contains(e.target) && !pickerAnchor.contains(e.target)) closePicker();
+  }, true);
+  $("#sheet").addEventListener("scroll", closePicker, { passive: true });
+  addEventListener("resize", closePicker);
 
   $("#lang").addEventListener("click", (e) => {
     const b = e.target.closest("button");

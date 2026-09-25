@@ -23,8 +23,9 @@ and a tap or a press of **space** reveals the next one.
 
 ## Features
 
-- 🎨 **Your colors** — tap a circle to pick any color, give it a name (or leave it
-  blank). Starts with yellow, green and blue.
+- 🎨 **Your colors** — tap a circle to choose from 15 named colors (Rød, Oransje,
+  Gul, …) or mix your own with hue and lightness sliders. Name each color with its
+  activity, or keep the color's own name. Starts with yellow, green and blue.
 - ⏸️ **Pause screen between colors** — optional, back to black (or any color)
   either on the next tap or automatically after 1–60 seconds, with a little
   countdown ring.
