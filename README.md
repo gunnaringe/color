@@ -34,6 +34,8 @@ and a tap or a press of **space** reveals the next one.
 - 🔗 **Share setups** — name a setup ("Morgenrutine") and share it as a link.
   Opening the link loads it on that device, with an undo. Bookmark several links
   to switch between setups.
+- 🎛️ **Themes** — the playful default, or *Hacker*: neon green terminal look with
+  a blinking cursor. Your game colors stay the same in both.
 - 🇳🇴🇬🇧 **Norwegian and English** — follows the browser, or pick one.
 - 📺 **Made for a big screen** — fullscreen button, keeps the screen awake, and
   the buttons fade away while you play.
@@ -63,6 +65,7 @@ links short and readable:
 | `s` | Pause seconds while the timer is off | `s=8` |
 | `o` | Options when not both on: `r` = no repeats, `n` = show names | `o=n` · `o=` |
 | `l` | Language — always included, so the setup looks the same on every device | `l=no` · `l=en` |
+| `t` | Theme: `h` = hacker (default theme if omitted) | `t=h` |
 
 Links contain only letters, digits and `- _ ~ + % & =`, because many chat and
 notes apps end a pasted link at a `,` or `:` or trim trailing punctuation. Names

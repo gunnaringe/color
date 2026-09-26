@@ -35,6 +35,11 @@ Full-screen random color picker for kids' games, served at color.apphub.casa.
   are a public contract — only add new keys, never change existing ones.
   User-provided text (setup/color names) comes from links: always render it
   with `textContent`, never `innerHTML`.
+- **Themes:** `settings.theme` is `default` or `hacker`, set as
+  `data-theme` on `<html>` (a tiny head script applies it before first paint).
+  The default theme is the base CSS; the hacker theme is one block of
+  `[data-theme="hacker"]` overrides — colors, font, glow — and must not change
+  layout. Add new themes the same way, leaving the default styles untouched.
 - **Style:** playful but tidy — rounded font (Fredoka), circles and pills only,
   no square boxes or sharp corners. Springy `--ease-pop` transitions.
 - **Testing:** open the file in headless Chromium via Playwright; check space,

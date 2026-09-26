@@ -13,6 +13,13 @@
 <link rel="icon" href="/icons/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <link rel="preload" href="/fonts/fredoka-latin.woff2" as="font" type="font/woff2" crossorigin>
+<script>
+  // Apply the saved theme before first paint so the default doesn't flash.
+  try {
+    const theme = JSON.parse(localStorage.getItem("color-settings-v1"))?.theme;
+    if (theme && theme !== "default") document.documentElement.dataset.theme = theme;
+  } catch {}
+</script>
 <style>
   /* Fredoka (SIL OFL, see fonts/OFL.txt), self-hosted so the app works offline.
      One variable file per script covers every weight. */
@@ -714,6 +721,107 @@
 
   button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 
+
+  /* ---------- Hacker theme ----------
+     Same layout; only colors, font and effects change. Everything is scoped to
+     [data-theme="hacker"] so the default theme stays exactly as it is. */
+
+  [data-theme="hacker"] {
+    --font: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+    --sheet: #020b05;
+    --sheet-2: #05180c;
+    --line: rgba(0, 255, 102, 0.16);
+    --text: #c9ffd9;
+    --muted: rgba(0, 255, 102, 0.62);
+    --accent: #00ff66;
+    --glow: 0 0 6px rgba(0, 255, 102, 0.55);
+    --neon-edge: inset 0 0 0 1px rgba(0, 255, 102, 0.28);
+    --scanlines: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.28) 0 1px, transparent 1px 3px);
+  }
+  [data-theme="hacker"] ::selection { background: rgba(0, 255, 102, 0.35); color: #fff; }
+  [data-theme="hacker"] input { caret-color: var(--accent); }
+
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* Start screen: a prompt with a blinking cursor */
+  [data-theme="hacker"] #hint p { color: var(--muted); text-shadow: var(--glow); }
+  [data-theme="hacker"] #hint p:not(.title)::before { content: "> "; color: var(--accent); }
+  [data-theme="hacker"] #hint p:not(.title)::after { content: "▌"; margin-left: 0.15em; color: var(--accent); animation: blink 1s steps(1) infinite; }
+  [data-theme="hacker"] #hint .title { color: var(--accent); text-shadow: 0 0 14px rgba(0, 255, 102, 0.6); letter-spacing: 0.04em; }
+  [data-theme="hacker"] #hint kbd { border-color: rgba(0, 255, 102, 0.45); color: var(--accent); }
+  [data-theme="hacker"] body.light #hint p,
+  [data-theme="hacker"] body.light #hint .title { color: #03210f; text-shadow: none; }
+
+  /* Color screen: terminal-style name */
+  [data-theme="hacker"] #name { text-transform: uppercase; letter-spacing: 0.06em; font-size: clamp(2.4rem, 12vmin, 9rem); }
+  [data-theme="hacker"] #name.show::after { content: "_"; animation: blink 1s steps(1) infinite; }
+
+  /* Floating buttons */
+  [data-theme="hacker"] .fab { background: rgba(0, 255, 102, 0.1); color: var(--accent); box-shadow: var(--neon-edge); }
+  [data-theme="hacker"] .fab:hover { background: rgba(0, 255, 102, 0.2); }
+  [data-theme="hacker"] body.light .fab { background: rgba(0, 0, 0, 0.55); color: var(--accent); }
+
+  /* Settings panel */
+  [data-theme="hacker"] #sheet {
+    background: var(--scanlines), linear-gradient(160deg, var(--sheet-2), var(--sheet) 60%);
+    box-shadow: 0 0 0 1px rgba(0, 255, 102, 0.35), 0 0 40px rgba(0, 255, 102, 0.12), 0 30px 80px rgba(0, 0, 0, 0.7);
+    text-shadow: var(--glow);
+  }
+  [data-theme="hacker"] .sheet-head h2 { color: var(--accent); }
+  [data-theme="hacker"] .sheet-head h2 .blob { background: var(--accent); box-shadow: 0 0 10px var(--accent); animation: blink 1.4s steps(1) infinite; }
+  [data-theme="hacker"] section h3::before { content: "// "; }
+  [data-theme="hacker"] .round,
+  [data-theme="hacker"] .ghost { background: rgba(0, 255, 102, 0.07); color: var(--accent); box-shadow: var(--neon-edge); }
+  [data-theme="hacker"] .round:hover { background: rgba(0, 255, 102, 0.16); }
+  [data-theme="hacker"] .ghost:hover { background: rgba(255, 51, 85, 0.15); color: #ff5577; }
+  [data-theme="hacker"] .color-row,
+  [data-theme="hacker"] .card { background: rgba(0, 255, 102, 0.045); box-shadow: var(--neon-edge); }
+  [data-theme="hacker"] .swatch { box-shadow: 0 0 0 2px rgba(0, 255, 102, 0.4), 0 0 14px color-mix(in srgb, var(--c) 55%, transparent); }
+  [data-theme="hacker"] .swatch[aria-expanded="true"] { box-shadow: 0 0 0 3px var(--accent), 0 0 18px var(--accent); }
+  [data-theme="hacker"] .add { border-color: rgba(0, 255, 102, 0.35); }
+  [data-theme="hacker"] .add:hover { color: var(--accent); }
+  [data-theme="hacker"] .pill { color: #001a0a; text-shadow: none; box-shadow: 0 0 14px rgba(0, 255, 102, 0.45); }
+  [data-theme="hacker"] .pill.danger { background: #ff3355; color: #fff; box-shadow: 0 0 14px rgba(255, 51, 85, 0.5); }
+
+  /* Switches, segmented pickers and chips */
+  [data-theme="hacker"] .switch .track { background: rgba(0, 255, 102, 0.08); box-shadow: var(--neon-edge); }
+  [data-theme="hacker"] .switch .track::after { background: var(--muted); box-shadow: none; }
+  [data-theme="hacker"] .switch input:checked + .track { background: rgba(0, 255, 102, 0.28); box-shadow: inset 0 0 0 1px var(--accent); }
+  [data-theme="hacker"] .switch input:checked + .track::after { background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+  [data-theme="hacker"] .segmented,
+  [data-theme="hacker"] .chip { background: rgba(0, 255, 102, 0.07); box-shadow: var(--neon-edge); }
+  [data-theme="hacker"] .segmented .thumb { box-shadow: 0 0 12px rgba(0, 255, 102, 0.55); }
+  [data-theme="hacker"] .segmented button[aria-pressed="true"] { color: #001a0a; text-shadow: none; }
+  [data-theme="hacker"] .chip[aria-pressed="true"] { background: var(--accent); color: #001a0a; text-shadow: none; box-shadow: 0 0 12px rgba(0, 255, 102, 0.5); }
+  [data-theme="hacker"] .chip::before { box-shadow: inset 0 0 0 2px rgba(0, 255, 102, 0.45); }
+  [data-theme="hacker"] .chip[aria-pressed="true"]::before {
+    background: #001a0a url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2300ff66' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 12.5l4 4L18 8'/%3E%3C/svg%3E") center / 75% no-repeat;
+  }
+
+  /* Color picker */
+  [data-theme="hacker"] #picker {
+    background: var(--scanlines), #031008;
+    box-shadow: 0 0 0 1px rgba(0, 255, 102, 0.4), 0 0 30px rgba(0, 255, 102, 0.15), 0 24px 60px rgba(0, 0, 0, 0.7);
+  }
+  [data-theme="hacker"] .palette button[aria-pressed="true"] { box-shadow: 0 0 0 3px #031008, 0 0 0 5.5px var(--accent), 0 0 14px var(--accent); }
+  [data-theme="hacker"] .slider::-webkit-slider-thumb { border-color: var(--accent); box-shadow: 0 0 10px var(--accent); }
+  [data-theme="hacker"] .slider::-moz-range-thumb { border-color: var(--accent); }
+
+  /* Dialog and toast */
+  [data-theme="hacker"] #confirm .card {
+    background: var(--scanlines), linear-gradient(160deg, #06190d, #020b05 70%);
+    box-shadow: 0 0 0 1px rgba(0, 255, 102, 0.4), 0 0 40px rgba(0, 255, 102, 0.15), 0 30px 80px rgba(0, 0, 0, 0.7);
+    text-shadow: var(--glow);
+  }
+  [data-theme="hacker"] #confirm h4 { color: var(--accent); }
+  [data-theme="hacker"] #confirm .actions button { padding-inline: 0.6rem; font-size: 0.92rem; white-space: nowrap; }
+  [data-theme="hacker"] #confirm .badge { color: #ff5577; background: rgba(255, 51, 85, 0.12); box-shadow: 0 0 0 1px rgba(255, 51, 85, 0.4); }
+  [data-theme="hacker"] #confirm[data-tone="accent"] .badge { color: var(--accent); background: rgba(0, 255, 102, 0.1); box-shadow: var(--neon-edge); }
+  [data-theme="hacker"] #confirm .field { background: rgba(0, 255, 102, 0.06); box-shadow: inset 0 0 0 1px var(--accent); }
+  [data-theme="hacker"] #toast { background: rgba(2, 11, 5, 0.94); box-shadow: 0 0 0 1px rgba(0, 255, 102, 0.4), 0 0 24px rgba(0, 255, 102, 0.15); color: var(--text); text-shadow: var(--glow); }
+  [data-theme="hacker"] #toast .pill { text-shadow: none; }
+  [data-theme="hacker"] .repo:hover { background: rgba(0, 255, 102, 0.08); }
+
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
   }
@@ -812,6 +920,15 @@
     </section>
 
     <section>
+      <h3 data-i18n="theme"></h3>
+      <div class="segmented" id="theme">
+        <span class="thumb"></span>
+        <button data-value="default" data-i18n="themeDefault"></button>
+        <button data-value="hacker" data-i18n="themeHacker"></button>
+      </div>
+    </section>
+
+    <section>
       <h3 data-i18n="setup"></h3>
       <div class="color-row setup-name">
         <input class="name-input" id="setup-name" maxlength="40" spellcheck="false" data-i18n-placeholder="setupName">
@@ -887,6 +1004,7 @@
       seconds: "Sekunder",
       pauseColor: "Pausefarge",
       language: "Språk",
+      theme: "Tema", themeDefault: "Standard", themeHacker: "Hacker",
       reset: "Tilbakestill alt",
       share: "Del oppsett",
       install: "Installer appen",
@@ -930,6 +1048,7 @@
       seconds: "Seconds",
       pauseColor: "Pause color",
       language: "Language",
+      theme: "Theme", themeDefault: "Default", themeHacker: "Hacker",
       reset: "Reset everything",
       share: "Share setup",
       install: "Install app",
@@ -975,6 +1094,7 @@
   const defaults = () => ({
     title: "",
     lang: "auto",
+    theme: "default",
     colors: Object.values(BUILTIN).map((c) => ({ ...c })),
     noRepeat: true,
     showName: true,
@@ -1031,6 +1151,7 @@
   //   l=no | l=en                     language. Always written — "auto" is
   //                                   resolved to what the sender sees, so
   //                                   the setup looks the same everywhere.
+  //   t=h                             hacker theme (default theme if left out)
   //
   // Links use only letters, digits and `-_~+%&=`: chat apps and notes decide
   // where a pasted link ends, and many stop at `,` or `:` or trim trailing
@@ -1073,6 +1194,7 @@
     if (!p.timer && p.seconds !== d.seconds) parts.push(`s=${p.seconds}`);
     if (!(st.noRepeat && st.showName)) parts.push(`o=${st.noRepeat ? "r" : ""}${st.showName ? "n" : ""}`);
     parts.push(`l=${st.lang === "auto" ? browserLang() : st.lang}`);
+    if (st.theme === "hacker") parts.push("t=h");
     return parts.join("&");
   };
 
@@ -1113,6 +1235,8 @@
         st.showName = v.includes("n");
       } else if (k === "l" && I18N[v]) {
         st.lang = v;
+      } else if (k === "t") {
+        st.theme = v === "h" ? "hacker" : "default";
       }
     }
     return st;
@@ -1432,6 +1556,7 @@
     // Segmented thumbs measure their buttons, so they need the sheet laid out.
     requestAnimationFrame(() => {
       setSegmented($("#lang"), settings.lang);
+      setSegmented($("#theme"), settings.theme);
     });
   };
 
@@ -1440,7 +1565,13 @@
     document.title = settings.title ? `${settings.title} · Farger` : "Farger · Colors";
   };
 
+  const applyTheme = () => {
+    if (settings.theme === "default") delete document.documentElement.dataset.theme;
+    else document.documentElement.dataset.theme = settings.theme;
+  };
+
   const renderAll = () => {
+    applyTheme();
     applyI18n();
     renderInstallHint();
     renderTitle();
@@ -1623,6 +1754,14 @@
   };
   $("#sheet").addEventListener("scroll", followAnchor, { passive: true });
   addEventListener("resize", followAnchor);
+
+  $("#theme").addEventListener("click", (e) => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    settings.theme = b.dataset.value;
+    save();
+    renderAll();
+  });
 
   $("#lang").addEventListener("click", (e) => {
     const b = e.target.closest("button");
