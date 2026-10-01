@@ -753,17 +753,22 @@
     --accent: #00ff66;
     --glow: 0 0 6px rgba(0, 255, 102, 0.55);
     --neon-edge: inset 0 0 0 1px rgba(0, 255, 102, 0.28);
-    /* Soft 4px scan lines: a faint lit line easing into a dark gap. The ramps
-       (rather than hard 1px stripes) keep them even at fractional pixel ratios. */
-    --scanlines: repeating-linear-gradient(180deg,
-      rgba(0, 255, 102, 0.035) 0, rgba(0, 255, 102, 0.035) 1px,
-      rgba(0, 0, 0, 0.26) 2.5px, rgba(0, 0, 0, 0.26) 3px,
-      rgba(0, 255, 102, 0.035) 4px);
+    --scanlines: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.15) 0 1px, transparent 1px 3px);
   }
   /* VT323 has one weight; faux bold smears its pixels. */
   [data-theme="hacker"] { font-synthesis: none; }
   [data-theme="hacker"] ::selection { background: rgba(0, 255, 102, 0.35); color: #fff; }
   [data-theme="hacker"] input { caret-color: var(--accent); }
+
+  /* Square corners: terminal windows, not bubbles. */
+  [data-theme="hacker"] :is(#sheet, #picker, #confirm .card) { border-radius: 3px; }
+  [data-theme="hacker"] :is(#hint kbd, .fab, .round, .color-row, .swatch, .palette button, .custom .preview,
+    .slider, .add, .card, .switch .track, .segmented, .segmented button, .segmented .thumb, .chip,
+    #confirm .badge, #confirm .field, #toast, .repo, .pill, .ghost, .sheet-head h2 .blob) { border-radius: 2px; }
+  [data-theme="hacker"] .switch .track::after,
+  [data-theme="hacker"] .chip::before,
+  [data-theme="hacker"] .slider::-webkit-slider-thumb { border-radius: 1px; }
+  [data-theme="hacker"] .slider::-moz-range-thumb { border-radius: 1px; }
 
   @keyframes blink { 50% { opacity: 0; } }
 
@@ -793,30 +798,25 @@
   [data-theme="hacker"] body.light #hint p,
   [data-theme="hacker"] body.light #hint .title { color: #03210f; text-shadow: none; }
 
-  /* CRT look on the start screen only (never over the colors): scan lines with
-     a vignette, and a faint refresh band rolling down. */
-  [data-theme="hacker"] #hint::before,
-  [data-theme="hacker"] #hint::after {
+  /* CRT scan lines over the whole screen, with a brief flicker every few
+     seconds — but only on the start screen and while a window is open, never
+     over the colors themselves. */
+  [data-theme="hacker"]::after {
     content: "";
-    position: absolute;
+    position: fixed;
     inset: 0;
+    z-index: 50;
     pointer-events: none;
+    background: var(--scanlines);
+    display: none;
+    animation: crt-flicker 4s infinite;
   }
-  [data-theme="hacker"] #hint::before {
-    background: var(--scanlines), radial-gradient(ellipse at center, rgba(0, 255, 102, 0.05) 0%, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
+  [data-theme="hacker"]:has(#hint:not(.gone), #scrim.open, #confirm.open)::after { display: block; }
+  @keyframes crt-flicker {
+    0%, 95%, 97%, 100% { opacity: 1; }
+    96% { opacity: 0.8; }
+    98% { opacity: 0.85; }
   }
-  [data-theme="hacker"] #hint::after {
-    bottom: auto;
-    height: 35vh;
-    background: linear-gradient(180deg, transparent, rgba(0, 255, 102, 0.04) 60%, rgba(0, 255, 102, 0.07) 85%, transparent);
-    animation: roll 8s linear infinite;
-  }
-  @keyframes roll {
-    from { transform: translateY(-35vh); }
-    to   { transform: translateY(100vh); }
-  }
-  [data-theme="hacker"] body.light #hint::before,
-  [data-theme="hacker"] body.light #hint::after { display: none; }
 
   /* Color screen: terminal-style name */
   [data-theme="hacker"] #name { text-transform: uppercase; letter-spacing: 0.06em; font-size: clamp(2.4rem, 12vmin, 9rem); }
@@ -832,7 +832,7 @@
 
   /* Settings panel */
   [data-theme="hacker"] #sheet {
-    background: var(--scanlines), linear-gradient(160deg, var(--sheet-2), var(--sheet) 60%);
+    background: linear-gradient(160deg, var(--sheet-2), var(--sheet) 60%);
     box-shadow: 0 0 0 1px rgba(0, 255, 102, 0.35), 0 0 40px rgba(0, 255, 102, 0.12), 0 30px 80px rgba(0, 0, 0, 0.7);
     text-shadow: var(--glow);
   }
@@ -869,7 +869,7 @@
 
   /* Color picker */
   [data-theme="hacker"] #picker {
-    background: var(--scanlines), #031008;
+    background: #031008;
     box-shadow: 0 0 0 1px rgba(0, 255, 102, 0.4), 0 0 30px rgba(0, 255, 102, 0.15), 0 24px 60px rgba(0, 0, 0, 0.7);
   }
   [data-theme="hacker"] .palette button[aria-pressed="true"] { box-shadow: 0 0 0 3px #031008, 0 0 0 5.5px var(--accent), 0 0 14px var(--accent); }
@@ -878,7 +878,7 @@
 
   /* Dialog and toast */
   [data-theme="hacker"] #confirm .card {
-    background: var(--scanlines), linear-gradient(160deg, #06190d, #020b05 70%);
+    background: linear-gradient(160deg, #06190d, #020b05 70%);
     box-shadow: 0 0 0 1px rgba(0, 255, 102, 0.4), 0 0 40px rgba(0, 255, 102, 0.15), 0 30px 80px rgba(0, 0, 0, 0.7);
     text-shadow: var(--glow);
   }
@@ -892,7 +892,7 @@
   [data-theme="hacker"] .repo:hover { background: rgba(0, 255, 102, 0.08); }
 
   @media (prefers-reduced-motion: reduce) {
-    [data-theme="hacker"] #hint::after { display: none; }
+    [data-theme="hacker"]::after { animation: none !important; }
     /* A blinking cursor isn't motion, so keep it blinking. */
     [data-theme="hacker"] #hint p:not(.title)::after,
     [data-theme="hacker"] #name.show span::after,
@@ -1170,7 +1170,7 @@
     lang: "auto",
     theme: "default",
     colors: Object.values(BUILTIN).map((c) => ({ ...c })),
-    noRepeat: true,
+    noRepeat: false,
     showName: true,
     pause: { enabled: false, onTap: true, timer: false, seconds: 5, hex: "#000000" },
   });
@@ -1273,7 +1273,9 @@
   };
 
   const decode = (hash) => {
-    const st = defaults();
+    // Links leave out `o` when both options are on, which predates noRepeat
+    // defaulting to off, so a link without `o` still means no repeats.
+    const st = { ...defaults(), noRepeat: true };
     for (const part of hash.split("&")) {
       const i = part.indexOf("=");
       if (i < 0) continue;
