@@ -4,7 +4,8 @@ Full-screen random color picker for kids' games, served at color.apphub.casa.
 
 - **No build:** the app is `public/index.html` (markup, CSS, JS inline) plus the
   PWA files next to it: `manifest.webmanifest`, `sw.js`, `icons/` and
-  self-hosted Fredoka in `fonts/` (SIL OFL — keep `fonts/OFL.txt`). No build
+  self-hosted fonts in `fonts/`: Fredoka, plus VT323 for the hacker theme (both
+  SIL OFL — keep `fonts/OFL.txt` and `fonts/OFL-VT323.txt`). No build
   step, no dependencies, no framework, no third-party requests (so it works
   offline). Keep it that way.
 - **Service worker:** the page is network-first (deploys show up on the next

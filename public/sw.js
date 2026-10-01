@@ -7,12 +7,14 @@
 // Bump CACHE only when changing what's precached or how; content updates
 // don't need it.
 
-const CACHE = "color-v1";
+const CACHE = "color-v2";
 const PRECACHE = [
   "/",
   "/manifest.webmanifest",
   "/fonts/fredoka-latin.woff2",
   "/fonts/fredoka-latin-ext.woff2",
+  "/fonts/vt323-latin.woff2",
+  "/fonts/vt323-latin-ext.woff2",
   "/icons/icon.svg",
   "/icons/icon-192.png",
 ];
