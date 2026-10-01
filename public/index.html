@@ -736,7 +736,12 @@
     --accent: #00ff66;
     --glow: 0 0 6px rgba(0, 255, 102, 0.55);
     --neon-edge: inset 0 0 0 1px rgba(0, 255, 102, 0.28);
-    --scanlines: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.28) 0 1px, transparent 1px 3px);
+    /* Soft 4px scan lines: a faint lit line easing into a dark gap. The ramps
+       (rather than hard 1px stripes) keep them even at fractional pixel ratios. */
+    --scanlines: repeating-linear-gradient(180deg,
+      rgba(0, 255, 102, 0.035) 0, rgba(0, 255, 102, 0.035) 1px,
+      rgba(0, 0, 0, 0.26) 2.5px, rgba(0, 0, 0, 0.26) 3px,
+      rgba(0, 255, 102, 0.035) 4px);
   }
   [data-theme="hacker"] ::selection { background: rgba(0, 255, 102, 0.35); color: #fff; }
   [data-theme="hacker"] input { caret-color: var(--accent); }
@@ -744,7 +749,7 @@
   @keyframes blink { 50% { opacity: 0; } }
 
   /* Start screen: a prompt with a blinking cursor */
-  [data-theme="hacker"] #hint p { color: var(--muted); text-shadow: var(--glow); }
+  [data-theme="hacker"] #hint p { color: var(--muted); text-shadow: var(--glow); font-size: clamp(0.95rem, 3vmin, 1.4rem); line-height: 1.7; text-wrap: balance; }
   [data-theme="hacker"] #hint p:not(.title)::before { content: "> "; color: var(--accent); }
   [data-theme="hacker"] #hint p:not(.title)::after { content: "▌"; margin-left: 0.15em; color: var(--accent); animation: blink 1s steps(1) infinite; }
   [data-theme="hacker"] #hint .title { color: var(--accent); text-shadow: 0 0 14px rgba(0, 255, 102, 0.6); letter-spacing: 0.04em; }
@@ -752,14 +757,42 @@
   [data-theme="hacker"] body.light #hint p,
   [data-theme="hacker"] body.light #hint .title { color: #03210f; text-shadow: none; }
 
+  /* CRT look on the start screen only (never over the colors): scan lines with
+     a vignette, and a faint refresh band rolling down. */
+  [data-theme="hacker"] #hint::before,
+  [data-theme="hacker"] #hint::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+  [data-theme="hacker"] #hint::before {
+    background: var(--scanlines), radial-gradient(ellipse at center, rgba(0, 255, 102, 0.05) 0%, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
+  }
+  [data-theme="hacker"] #hint::after {
+    bottom: auto;
+    height: 35vh;
+    background: linear-gradient(180deg, transparent, rgba(0, 255, 102, 0.045) 70%, rgba(0, 255, 102, 0.08) 96%, transparent);
+    animation: roll 8s linear infinite;
+  }
+  @keyframes roll {
+    from { transform: translateY(-35vh); }
+    to   { transform: translateY(100vh); }
+  }
+  [data-theme="hacker"] body.light #hint::before,
+  [data-theme="hacker"] body.light #hint::after { display: none; }
+
   /* Color screen: terminal-style name */
   [data-theme="hacker"] #name { text-transform: uppercase; letter-spacing: 0.06em; font-size: clamp(2.4rem, 12vmin, 9rem); }
-  [data-theme="hacker"] #name.show::after { content: "_"; animation: blink 1s steps(1) infinite; }
+  /* On the inner span, not #name: as a grid item the cursor would push the name off center. */
+  [data-theme="hacker"] #name.show span::after { content: "_"; animation: blink 1s steps(1) infinite; }
 
   /* Floating buttons */
-  [data-theme="hacker"] .fab { background: rgba(0, 255, 102, 0.1); color: var(--accent); box-shadow: var(--neon-edge); }
-  [data-theme="hacker"] .fab:hover { background: rgba(0, 255, 102, 0.2); }
-  [data-theme="hacker"] body.light .fab { background: rgba(0, 0, 0, 0.55); color: var(--accent); }
+  /* Dark backing so they stay readable on any color, not just black. */
+  [data-theme="hacker"] .fab,
+  [data-theme="hacker"] body.light .fab { background: rgba(0, 10, 4, 0.6); color: var(--accent); box-shadow: var(--neon-edge); }
+  [data-theme="hacker"] .fab:hover,
+  [data-theme="hacker"] body.light .fab:hover { background: rgba(0, 30, 12, 0.75); }
 
   /* Settings panel */
   [data-theme="hacker"] #sheet {
@@ -823,6 +856,7 @@
   [data-theme="hacker"] .repo:hover { background: rgba(0, 255, 102, 0.08); }
 
   @media (prefers-reduced-motion: reduce) {
+    [data-theme="hacker"] #hint::after { display: none; }
     *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
   }
 </style>
@@ -1345,7 +1379,10 @@
 
   const showName = (text, hex) => {
     nameEl.classList.remove("show");
-    nameEl.textContent = text;
+    // In a span so a theme's ::after cursor flows inline after the last letter.
+    const span = document.createElement("span");
+    span.textContent = text;
+    nameEl.replaceChildren(span);
     nameEl.style.color = isLight(hex) ? "rgba(0,0,0,0.78)" : "rgba(255,255,255,0.92)";
     if (text) {
       nameEl.offsetWidth; // restart the pop animation
