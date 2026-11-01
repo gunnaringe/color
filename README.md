@@ -92,3 +92,8 @@ custom domain (see [`wrangler.jsonc`](wrangler.jsonc)):
 ```sh
 npx wrangler deploy
 ```
+
+## Licence
+
+[Apache 2.0](LICENSE), except the self-hosted fonts in `public/fonts/`: Fredoka and VT323,
+both under the SIL Open Font License ([OFL.txt](public/fonts/OFL.txt), [OFL-VT323.txt](public/fonts/OFL-VT323.txt)).
